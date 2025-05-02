@@ -1,0 +1,25 @@
+<mat-card class="project-members-card">
+  <h2>Gestion des membres</h2>
+  <ul>
+    @for (member of membersQuery.data(); track member.id) {
+      <li>{{ member.user.username }} ({{ member.role }})</li>
+    }
+  </ul>
+  <form [formGroup]="inviteForm" (ngSubmit)="invite()">
+    <mat-form-field class="full-width">
+      <mat-label>Email du membre</mat-label>
+      <input matInput formControlName="email" required />
+    </mat-form-field>
+    <mat-form-field class="full-width">
+      <mat-label>Rôle</mat-label>
+      <mat-select formControlName="role">
+        <mat-option value="MEMBER">Membre</mat-option>
+        <mat-option value="OBSERVER">Observateur</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <button mat-raised-button color="primary" type="submit" [disabled]="inviteForm.invalid || inviteMutation.isPending()">Inviter</button>
+    @if (inviteError()) {
+      <div class="error">{{ inviteError() }}</div>
+    }
+  </form>
+</mat-card>

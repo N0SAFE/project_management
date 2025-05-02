@@ -1,0 +1,19 @@
+<mat-card class="project-list-card">
+  <h2>Mes projets</h2>
+  @if (projectsQuery.isLoading()) {
+    <p>Chargement...</p>
+  } @else if (projectsQuery.isError()) {
+    <p>Erreur lors du chargement des projets.</p>
+  } @else if ((projectsQuery.data() ?? []).length === 0) {
+    <p>Aucun projet pour le moment.</p>
+  } @else {
+    <ul>
+      @for (project of projectsQuery.data(); track project.id) {
+        <li>
+          <span>{{ project.name }}</span>
+          <button mat-button color="primary" (click)="goToProject(project.id)">Voir</button>
+        </li>
+      }
+    </ul>
+  }
+</mat-card>

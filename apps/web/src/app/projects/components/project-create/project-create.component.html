@@ -1,0 +1,33 @@
+<mat-card class="project-create-card">
+  <h2>Créer un projet</h2>
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Nom du projet</mat-label>
+      <input matInput formControlName="name" required>
+      @if (form.get('name')?.hasError('required')) {
+        <mat-error>Nom requis</mat-error>
+      }
+      @if (form.get('name')?.hasError('minlength')) {
+        <mat-error>3 caractères minimum</mat-error>
+      }
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Description</mat-label>
+      <textarea matInput formControlName="description" required></textarea>
+      @if (form.get('description')?.hasError('required')) {
+        <mat-error>Description requise</mat-error>
+      }
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Date de début</mat-label>
+      <input matInput formControlName="startDate" type="date" required>
+      @if (form.get('startDate')?.hasError('required')) {
+        <mat-error>Date requise</mat-error>
+      }
+    </mat-form-field>
+    <button mat-raised-button color="primary" class="full-width" [disabled]="createProjectMutation.isPending()">Créer</button>
+    @if (errorMsg()) {
+      <div class="error">{{ errorMsg() }}</div>
+    }
+  </form>
+</mat-card>

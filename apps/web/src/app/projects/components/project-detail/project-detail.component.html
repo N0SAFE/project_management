@@ -1,0 +1,16 @@
+<mat-card class="project-detail-card">
+  @if (projectQuery.data()) {
+    <h2>{{ projectQuery.data()?.name }}</h2>
+    <p>{{ projectQuery.data()?.description }}</p>
+    <p>Date de début : {{ projectQuery.data()?.startDate }}</p>
+    <h3>Membres</h3>
+    <ul>
+      @for (member of membersQuery.data(); track member.id) {
+        <li>{{ member.user.username }} ({{ member.role }})</li>
+      }
+    </ul>
+    <a mat-button color="primary" [routerLink]="['/projects', projectQuery.data()?.id, 'members']">Gérer les membres</a>
+  } @else {
+    <p>Chargement...</p>
+  }
+</mat-card>
