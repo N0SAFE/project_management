@@ -1,0 +1,25 @@
+{
+  "name": "project_management",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "concurrently \"npm run build:api\" \"npm run build:web\"",
+    "build:api": "cd api && mvnw.cmd spring-boot:build",
+    "build:web": "cd web && npm run build",
+    "start": "concurrently \"npm run start:api\" \"npm run start:web\"",
+    "start:api": "cd api && mvnw.cmd spring-boot:run",
+    "start:web": "cd web && npm start",
+    "test": "concurrently \"npm run test:api\" \"npm run test:web\"",
+    "test:api": "cd api && mvnw.cmd test",
+    "test:web": "cd web && npm test",
+    "lint": "concurrently \"npm run lint:api\" \"npm run lint:web\"",
+    "lint:api": "cd api && mvnw.cmd checkstyle:check",
+    "lint:web": "cd web && npm run lint"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
