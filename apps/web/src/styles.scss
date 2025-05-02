@@ -1,1 +1,14 @@
-/* You can add global styles to this file, and also import other style files */
+// Material dark theme overrides
+@use '@angular/material' as mat;
+@use "tailwindcss";
+
+html, body {
+  height: 100%;
+  background: linear-gradient(135deg, #181c24 0%, #232946 100%);
+  color: #f4f4f4;
+  font-family: 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+body {
+  margin: 0;
+  background: none;
+}
