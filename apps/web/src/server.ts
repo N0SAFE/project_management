@@ -41,12 +41,21 @@ app.use(
  * Handle all other requests by rendering the Angular application.
  */
 app.use('/**', (req, res, next) => {
+  // Store the original request in global context so Angular can access it
+  (global as any).__express_request = req;
+  
   angularApp
     .handle(req)
-    .then((response) =>
-      response ? writeResponseToNodeResponse(response, res) : next(),
-    )
-    .catch(next);
+    .then((response) => {
+      // Clean up the global context after handling
+      delete (global as any).__express_request;
+      return response ? writeResponseToNodeResponse(response, res) : next();
+    })
+    .catch((error) => {
+      // Clean up the global context on error
+      delete (global as any).__express_request;
+      next(error);
+    });
 });
 
 /**

@@ -1,0 +1,36 @@
+// _theme-dark.scss
+// Shared dark mode variables and mixins
+$color-bg-main: #181c24;
+$color-bg-card: #232946;
+$color-bg-gradient: linear-gradient(135deg, #181c24 0%, #232946 100%);
+$color-primary: #6c63ff;
+$color-primary-dark: #232946;
+$color-accent: #ff5370;
+$color-text-main: #f4f4f4;
+$color-text-muted: #b8b8b8;
+$color-border: #2e335a;
+$color-border-light: #393e5c;
+$box-shadow-card: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+$box-shadow-card-light: 0 4px 32px 0 rgba(31,38,135,0.18);
+$border-radius-card: 18px;
+$border-radius-btn: 8px;
+
+@mixin card {
+  background: $color-bg-card;
+  color: $color-text-main;
+  border-radius: $border-radius-card;
+  box-shadow: $box-shadow-card;
+  border: 1px solid $color-border;
+}
+
+@mixin btn-primary {
+  background: linear-gradient(90deg, $color-primary 0%, $color-primary-dark 100%);
+  color: #fff;
+  font-weight: 600;
+  border-radius: $border-radius-btn;
+  box-shadow: 0 2px 8px rgba(108,99,255,0.15);
+  transition: background 0.2s;
+  &:hover {
+    background: linear-gradient(90deg, $color-primary-dark 0%, $color-primary 100%);
+  }
+}
