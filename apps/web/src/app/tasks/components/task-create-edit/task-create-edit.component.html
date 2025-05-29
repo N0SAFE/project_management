@@ -1,0 +1,432 @@
+<!-- Professional Task Create/Edit Card -->
+<div class="w-full max-w-2xl mx-auto space-y-8">
+  <!-- Header -->
+  <div class="space-y-4">
+    <!-- Professional Breadcrumb Navigation -->
+    <nav hlmBreadcrumb>
+      <ol hlmBreadcrumbList class="flex items-center gap-2">
+        <li hlmBreadcrumbItem>
+          <a
+            hlmBreadcrumbLink
+            link="/projects"
+            class="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Projets
+          </a>
+        </li>
+        <li hlmBreadcrumbSeparator class="text-muted-foreground"></li>
+        <li hlmBreadcrumbItem>
+          <a
+            hlmBreadcrumbLink
+            [link]="['/projects', projectId]"
+            class="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Projet
+          </a>
+        </li>
+        <li hlmBreadcrumbSeparator class="text-muted-foreground"></li>
+        <li hlmBreadcrumbItem>
+          <a
+            hlmBreadcrumbLink
+            [link]="['/projects', projectId, 'tasks']"
+            class="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Tâches
+          </a>
+        </li>
+        <li hlmBreadcrumbSeparator class="text-muted-foreground"></li>
+        <li hlmBreadcrumbItem>
+          <span hlmBreadcrumbPage class="text-foreground font-medium">
+            {{ taskId ? "Modifier" : "Créer" }}
+          </span>
+        </li>
+      </ol>
+    </nav>
+    <div class="space-y-2">
+      <h1 hlmH1 class="text-3xl font-bold">
+        {{ taskId ? "Modifier la tâche" : "Créer une nouvelle tâche" }}
+      </h1>
+      <p hlmMuted>
+        {{
+          taskId
+            ? "Modifiez les détails de cette tâche"
+            : "Configurez votre tâche et assignez-la à un membre"
+        }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Create/Edit Form Card -->
+  <div hlmCard class="p-8">
+    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-6">
+      <!-- Task Name -->
+      <app-form-field
+        label="Nom de la tâche"
+        controlName="name"
+        [errorMap]="{ required: 'Le nom de la tâche est requis' }"
+      >
+        <input
+          hlmInput
+          formControlName="name"
+          type="text"
+          required
+          placeholder="Ex: Développer la page d'accueil"
+          class="w-full"
+        />
+      </app-form-field>
+
+      <!-- Task Description -->
+      <app-form-field label="Description" controlName="description">
+        <textarea
+          hlmInput
+          formControlName="description"
+          rows="4"
+          placeholder="Décrivez les détails et objectifs de cette tâche..."
+          class="w-full resize-vertical"
+        ></textarea>
+      </app-form-field>
+
+      <!-- Due Date -->
+      <app-form-field label="Date d'échéance" controlName="dueDate">
+        <hlm-date-picker formControlName="dueDate" type="date" class="w-full">
+          <span>selectionné une date</span>
+        </hlm-date-picker>
+      </app-form-field>
+
+      <!-- Priority -->
+      <app-form-field
+        label="Priorité"
+        controlName="priorityId"
+        [errorMap]="{ required: 'La priorité est requise' }"
+      >
+        @if (prioritiesQuery.isPending()) {
+        <div class="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+          <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          <span class="text-sm text-muted-foreground">Chargement des priorités...</span>
+        </div>
+        } @else if (prioritiesQuery.error()) {
+        <div class="flex items-center gap-2 p-3 border border-destructive/50 rounded-md bg-destructive/5">
+          <svg class="h-4 w-4 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span class="text-sm text-destructive">Erreur lors du chargement des priorités</span>
+        </div>
+        } @else {
+        <brn-select formControlName="priorityId" class="w-full">
+          <hlm-select-trigger class="w-full">
+            <span>
+              {{ getSelectedPriorityName() || "Sélectionnez une priorité" }}
+            </span>
+          </hlm-select-trigger>
+          <hlm-select-content>
+            @for (priority of prioritiesQuery.data() || []; track priority.id) {
+            <hlm-option [value]="priority.id.toString()">
+              <div class="flex items-center gap-2">
+                <div 
+                  class="w-2 h-2 rounded-full" 
+                  [style.background-color]="priority.color"
+                ></div>
+                <span>{{ priority.name }} - {{ priority.description }}</span>
+              </div>
+            </hlm-option>
+            }
+          </hlm-select-content>
+        </brn-select>
+        }
+      </app-form-field>
+
+      <!-- Status -->
+      <app-form-field
+        label="Statut"
+        controlName="statusId"
+        [errorMap]="{ required: 'Le statut est requis' }"
+      >
+        @if (statusesQuery.isPending()) {
+        <div class="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+          <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          <span class="text-sm text-muted-foreground">Chargement des statuts...</span>
+        </div>
+        } @else if (statusesQuery.error()) {
+        <div class="flex items-center gap-2 p-3 border border-destructive/50 rounded-md bg-destructive/5">
+          <svg class="h-4 w-4 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span class="text-sm text-destructive">Erreur lors du chargement des statuts</span>
+        </div>
+        } @else {
+        <brn-select formControlName="statusId" class="w-full">
+          <hlm-select-trigger class="w-full">
+            <span>
+              {{ getSelectedStatusName() || "Sélectionnez un statut" }}
+            </span>
+          </hlm-select-trigger>
+          <hlm-select-content>
+            @for (status of statusesQuery.data() || []; track status.id) {
+            <hlm-option [value]="status.id.toString()">
+              <div class="flex items-center gap-2">
+                <div 
+                  class="w-2 h-2 rounded-full" 
+                  [style.background-color]="status.color"
+                ></div>
+                <span>{{ status.name }} - {{ status.description }}</span>
+              </div>
+            </hlm-option>
+            }
+          </hlm-select-content>
+        </brn-select>
+        }
+      </app-form-field>
+
+      <!-- Assignee Selection -->
+      <app-form-field
+        label="Assigner à un membre"
+        controlName="assigneeId"
+      >
+        @if (projectMembersQuery.isPending()) {
+        <div class="flex items-center gap-2 p-3 border rounded-md bg-muted/50">
+          <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          <span class="text-sm text-muted-foreground">Chargement des membres...</span>
+        </div>
+        } @else if (projectMembersQuery.error()) {
+        <div class="flex items-center gap-2 p-3 border border-destructive/50 rounded-md bg-destructive/5">
+          <svg class="h-4 w-4 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span class="text-sm text-destructive">Erreur lors du chargement des membres</span>
+        </div>
+        } @else {
+        <brn-select formControlName="assigneeId" class="w-full">
+          <hlm-select-trigger class="w-full">
+            <span>{{ getSelectedMemberName() }}</span>
+          </hlm-select-trigger>
+          <hlm-select-content class="max-h-[300px]">
+            <!-- Optional: No assignee option -->
+            <hlm-option value="">
+              <div class="flex items-center gap-3 py-2">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                  <svg class="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div class="flex flex-col">
+                  <span class="font-medium">Non assigné</span>
+                  <span class="text-xs text-muted-foreground">Assigner plus tard</span>
+                </div>
+              </div>
+            </hlm-option>
+            
+            <!-- Project members -->
+            @for (member of projectMembersQuery.data(); track member.id) {
+            <hlm-option [value]="member.user.id.toString()">
+              <div class="flex items-center gap-3 py-2">
+                <!-- User Avatar -->
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                  <span class="text-sm font-medium text-primary">
+                    {{ member.user.username.charAt(0).toUpperCase() }}
+                  </span>
+                </div>
+                
+                <!-- User Info -->
+                <div class="flex flex-col min-w-0 flex-1">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium truncate">{{ member.user.username }}</span>
+                    <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium" 
+                          [class]="getRoleBadgeColor(member.role)">
+                      {{ member.role }}
+                    </span>
+                  </div>
+                  <span class="text-xs text-muted-foreground truncate">{{ member.user.email }}</span>
+                </div>
+              </div>
+            </hlm-option>
+            }
+            
+            <!-- Empty state if no members -->
+            @if (projectMembersQuery.data()?.length === 0) {
+            <div class="flex items-center gap-2 p-4 text-center">
+              <div class="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                <svg class="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <div class="text-sm text-muted-foreground">
+                Aucun membre dans ce projet
+              </div>
+            </div>
+            }
+          </hlm-select-content>
+        </brn-select>
+        }
+      </app-form-field>
+
+      <!-- Error Alert -->
+      @if (errorMsg()) {
+      <div hlmAlert variant="destructive" class="border border-destructive/50">
+        <svg
+          hlmAlertIcon
+          class="h-4 w-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        <div hlmAlertTitle>
+          {{
+            taskId
+              ? "Erreur lors de la modification"
+              : "Erreur lors de la création"
+          }}
+        </div>
+        <div hlmAlertDescription>{{ errorMsg() }}</div>
+      </div>
+      }
+
+      <!-- Action Buttons -->
+      <div class="flex gap-4 pt-4">
+        <a
+          [routerLink]="['/projects', projectId, 'tasks']"
+          hlmBtn
+          variant="outline"
+          class="flex-1"
+        >
+          Annuler
+        </a>
+        <button
+          hlmBtn
+          type="submit"
+          class="flex-1 gap-2"
+          [disabled]="
+            createTaskMutation.isPending() || updateTaskMutation.isPending()
+          "
+        >
+          @if (createTaskMutation.isPending() || updateTaskMutation.isPending())
+          {
+          <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          {{ taskId ? "Modification..." : "Création..." }}
+          } @else {
+          <svg
+            class="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            @if (taskId) {
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
+            } @else {
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"
+            />
+            }
+          </svg>
+          {{ taskId ? "Mettre à jour la tâche" : "Créer la tâche" }}
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tips Card -->
+  <div hlmCard class="p-6 bg-muted/30">
+    <div class="flex gap-4">
+      <div class="flex-shrink-0">
+        <div
+          class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10"
+        >
+          <svg
+            class="h-4 w-4 text-primary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <h3 class="font-semibold text-sm">Conseils pour une bonne tâche</h3>
+        <p class="text-sm text-muted-foreground">
+          • Utilisez un nom clair et descriptif<br />
+          • Définissez une priorité appropriée<br />
+          • Ajoutez une date d'échéance si nécessaire<br />
+          • Assignez la tâche à un membre de l'équipe ou laissez non assigné<br />
+          • Les rôles sont indiqués : ADMIN (administrateur), MEMBER (membre), OBSERVER (observateur)
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
