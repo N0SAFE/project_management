@@ -1,18 +1,44 @@
 import { Component, inject, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { ProjectService, ProjectMember } from '../../services/project.service';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ProjectService, ProjectMember } from '../../services/project/project.service';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatSelectModule } from '@angular/material/select';
 import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-query-experimental';
+import { HlmCardDirective } from '@spartan-ng/ui-card-helm';
+import { HlmButtonDirective } from '@spartan-ng/ui-button-helm';
+import { HlmInputDirective } from '@spartan-ng/ui-input-helm';
+import { HlmBadgeDirective } from '@spartan-ng/ui-badge-helm';
+import { HlmSkeletonComponent } from '@spartan-ng/ui-skeleton-helm';
+import { HlmAvatarComponent, HlmAvatarFallbackDirective } from '@spartan-ng/ui-avatar-helm';
+import { HlmAlertDirective, HlmAlertDescriptionDirective, HlmAlertTitleDirective, HlmAlertIconDirective } from '@spartan-ng/ui-alert-helm';
+import { HlmH1Directive, HlmH3Directive, HlmMutedDirective } from '@spartan-ng/ui-typography-helm';
+import { FormFieldComponent } from '../../../shared/form-field/form-field.component';
+import { HlmSelectImports } from '@spartan-ng/ui-select-helm';
+import { BrnSelectImports } from '@spartan-ng/brain/select';
 
 @Component({
   selector: 'app-project-members',
   standalone: true,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatCardModule, MatSelectModule],
+  imports: [
+    ReactiveFormsModule, 
+    RouterLink,
+    HlmCardDirective, 
+    HlmButtonDirective, 
+    HlmInputDirective, 
+    HlmBadgeDirective,
+    HlmSkeletonComponent,
+    HlmAvatarComponent,
+    HlmAvatarFallbackDirective,
+    HlmAlertDirective,
+    HlmAlertDescriptionDirective,
+    HlmAlertTitleDirective,
+    HlmAlertIconDirective,
+    HlmH1Directive,
+    HlmH3Directive,
+    HlmMutedDirective,
+    FormFieldComponent,
+    HlmSelectImports,
+    BrnSelectImports,
+  ],
   templateUrl: './project-members.component.html',
   styleUrl: './project-members.component.scss'
 })

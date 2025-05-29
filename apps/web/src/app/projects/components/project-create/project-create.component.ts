@@ -1,17 +1,32 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { ProjectService } from '../../services/project.service';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { injectQuery, injectMutation, QueryClient } from '@tanstack/angular-query-experimental';
+import { Router, RouterLink } from '@angular/router';
+import { ProjectService } from '../../services/project/project.service';
+import { injectMutation, QueryClient } from '@tanstack/angular-query-experimental';
+import { HlmCardDirective } from '@spartan-ng/ui-card-helm';
+import { HlmButtonDirective } from '@spartan-ng/ui-button-helm';
+import { HlmInputDirective } from '@spartan-ng/ui-input-helm';
+import { HlmAlertDirective, HlmAlertDescriptionDirective, HlmAlertTitleDirective, HlmAlertIconDirective } from '@spartan-ng/ui-alert-helm';
+import { HlmH1Directive, HlmMutedDirective } from '@spartan-ng/ui-typography-helm';
+import { FormFieldComponent } from '../../../shared/form-field/form-field.component';
 
 @Component({
   selector: 'app-project-create',
   standalone: true,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatCardModule],
+  imports: [
+    ReactiveFormsModule, 
+    RouterLink,
+    HlmCardDirective, 
+    HlmButtonDirective, 
+    HlmInputDirective, 
+    HlmAlertDirective,
+    HlmAlertDescriptionDirective,
+    HlmAlertTitleDirective,
+    HlmAlertIconDirective,
+    HlmH1Directive,
+    HlmMutedDirective,
+    FormFieldComponent
+  ],
   templateUrl: './project-create.component.html',
   styleUrl: './project-create.component.scss'
 })

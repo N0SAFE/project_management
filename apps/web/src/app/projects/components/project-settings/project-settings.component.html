@@ -1,0 +1,586 @@
+<!-- Project Settings Page -->
+<div class="w-full max-w-6xl mx-auto space-y-8">
+  <!-- Loading State -->
+  @if (settingsQuery.isLoading() || projectQuery.isLoading()) {
+  <div class="space-y-6">
+    <div class="space-y-4">
+      <hlm-skeleton class="h-8 w-1/3"></hlm-skeleton>
+      <hlm-skeleton class="h-4 w-full"></hlm-skeleton>
+    </div>
+    <hlm-skeleton class="h-96 w-full"></hlm-skeleton>
+  </div>
+  }
+
+  <!-- Error State -->
+  @else if (settingsQuery.isError() || projectQuery.isError()) {
+  <div hlmCard class="p-8 text-center">
+    <div class="flex flex-col items-center gap-4">
+      <div class="rounded-full bg-destructive/10 p-4">
+        <span class="text-destructive text-xl">⚠️</span>
+      </div>
+      <div class="space-y-2">
+        <h3 hlmH3>Erreur de chargement</h3>
+        <p hlmMuted>Impossible de charger les paramètres du projet.</p>
+      </div>
+      <button hlmBtn variant="outline" (click)="settingsQuery.refetch()">
+        Réessayer
+      </button>
+    </div>
+  </div>
+  }
+
+  <!-- Unauthorized Access -->
+  @else if (!isAdmin) {
+  <div hlmAlert variant="destructive">
+    <span hlmAlertIcon>⚠️</span>
+    <h4 hlmAlertTitle>Accès refusé</h4>
+    <p hlmAlertDescription>
+      Seuls les administrateurs du projet peuvent accéder aux paramètres.
+    </p>
+  </div>
+  }
+
+  <!-- Main Content -->
+  @else if (settingsQuery.data() && projectQuery.data()) { @let settingsData =
+  settingsQuery.data();
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div class="space-y-1">
+      <h1 hlmH1>Paramètres du projet</h1>
+      <p hlmMuted>
+        {{ projectQuery.data()?.name }} - Configuration des statuts et priorités
+      </p>
+    </div>
+    <button hlmBtn variant="outline" (click)="goBack()">
+      <span class="mr-2">←</span>
+      Retour au projet
+    </button>
+  </div>
+
+  <!-- Settings Tabs -->
+  <hlm-tabs [tab]="activeTab">
+    <hlm-tabs-list class="grid w-full grid-cols-2">
+      <button hlmTabsTrigger="statuses" (click)="activeTab = 'statuses'">
+        <span class="mr-2">🏷️</span>
+        Statuts des tâches
+      </button>
+      <button hlmTabsTrigger="priorities" (click)="activeTab = 'priorities'">
+        <span class="mr-2">🚩</span>
+        Priorités des tâches
+      </button>
+    </hlm-tabs-list>
+
+    <!-- Task Statuses Tab -->
+    <div hlmTabsContent="statuses" class="space-y-6">
+      <!-- Statuses Header -->
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 hlmH2>Statuts des tâches</h2>
+          <p hlmMuted>
+            Gérez les statuts disponibles pour les tâches de ce projet.
+          </p>
+        </div>
+        <button hlmBtn (click)="openCreateStatusDialog()">
+          <span class="mr-2">+</span>
+          Nouveau statut
+        </button>
+      </div>
+
+      <!-- Statuses List -->
+      <div class="grid gap-4">
+        @for (status of settingsData?.statuses || []; track status.id) {
+        <div hlmCard class="p-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <!-- Color indicator -->
+              <div
+                class="w-4 h-4 rounded-full border"
+                [style.background-color]="status.color"
+              ></div>
+
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <h3 hlmH3 class="mb-0">{{ status.name }}</h3>
+                  @if (status.isDefault) {
+                  <span hlmBadge variant="secondary" class="text-xs"
+                    >Par défaut</span
+                  >
+                  }
+                </div>
+                @if (status.description) {
+                <p hlmMuted class="text-sm">{{ status.description }}</p>
+                }
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              @if (!status.isDefault) {
+              <button
+                hlmBtn
+                variant="outline"
+                size="sm"
+                (click)="setDefaultStatus(status)"
+                [disabled]="setDefaultStatusMutation.isPending()"
+              >
+                Définir par défaut
+              </button>
+              }
+
+              <button
+                hlmBtn
+                variant="outline"
+                size="sm"
+                (click)="openEditStatusDialog(status)"
+              >
+                <span>✏️</span>
+              </button>
+
+              @if (!status.isDefault) {
+              <button
+                hlmBtn
+                variant="outline"
+                size="sm"
+                (click)="deleteStatus(status)"
+                [disabled]="deleteStatusMutation.isPending()"
+              >
+                <span>🗑️</span>
+              </button>
+              }
+            </div>
+          </div>
+        </div>
+        } @if (!settingsData?.statuses?.length) {
+        <div hlmCard class="p-8 text-center">
+          <span class="block mx-auto mb-4 text-muted-foreground text-4xl"
+            >🏷️</span
+          >
+          <h3 hlmH3>Aucun statut configuré</h3>
+          <p hlmMuted class="mb-4">
+            Commencez par créer votre premier statut de tâche.
+          </p>
+          <button hlmBtn (click)="openCreateStatusDialog()">
+            Créer un statut
+          </button>
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- Task Priorities Tab -->
+    <div hlmTabsContent="priorities" class="space-y-6">
+      <!-- Priorities Header -->
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 hlmH2>Priorités des tâches</h2>
+          <p hlmMuted>
+            Gérez les priorités disponibles avec leurs états personnalisés.
+          </p>
+        </div>
+        <button hlmBtn (click)="openCreatePriorityDialog()">
+          <span class="mr-2">+</span>
+          Nouvelle priorité
+        </button>
+      </div>
+
+      <!-- Priorities List -->
+      <div class="grid gap-4">
+        @for (priority of settingsData?.priorities || []; track priority.id) {
+        <div hlmCard class="p-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <!-- Color indicator -->
+              <div
+                class="w-4 h-4 rounded-full border"
+                [style.background-color]="priority.color"
+              ></div>
+
+              <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                  <h3 hlmH3 class="mb-0">{{ priority.name }}</h3>
+                  <span hlmBadge variant="outline" class="text-xs"
+                    >Niveau {{ priority.level }}</span
+                  >
+                  @if (priority.isDefault) {
+                  <span hlmBadge variant="secondary" class="text-xs"
+                    >Par défaut</span
+                  >
+                  }
+                </div>
+
+                @if (priority.description) {
+                <p hlmMuted class="text-sm">{{ priority.description }}</p>
+                }
+
+                <!-- States mapping -->
+                <div
+                  class="flex items-center gap-4 text-xs text-muted-foreground"
+                >
+                  <span>{{ priority.todoState | lowercase }}</span>
+                  <span>→</span>
+                  <span>{{ priority.doingState | lowercase }}</span>
+                  <span>→</span>
+                  <span>{{ priority.finishState | lowercase }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              @if (!priority.isDefault) {
+              <button
+                hlmBtn
+                variant="outline"
+                size="sm"
+                (click)="setDefaultPriority(priority)"
+                [disabled]="setDefaultPriorityMutation.isPending()"
+              >
+                Définir par défaut
+              </button>
+              }
+
+              <button
+                hlmBtn
+                variant="outline"
+                size="sm"
+                (click)="openEditPriorityDialog(priority)"
+              >
+                <span>✏️</span>
+              </button>
+
+              @if (!priority.isDefault) {
+              <button
+                hlmBtn
+                variant="outline"
+                size="sm"
+                (click)="deletePriority(priority)"
+                [disabled]="deletePriorityMutation.isPending()"
+              >
+                <span>🗑️</span>
+              </button>
+              }
+            </div>
+          </div>
+        </div>
+        } @if (!settingsData?.priorities?.length) {
+        <div hlmCard class="p-8 text-center">
+          <span class="block mx-auto mb-4 text-muted-foreground text-4xl"
+            >🚩</span
+          >
+          <h3 hlmH3>Aucune priorité configurée</h3>
+          <p hlmMuted class="mb-4">
+            Commencez par créer votre première priorité de tâche.
+          </p>
+          <button hlmBtn (click)="openCreatePriorityDialog()">
+            Créer une priorité
+          </button>
+        </div>
+        }
+      </div>
+    </div>
+  </hlm-tabs>
+  }
+</div>
+
+<!-- Status Dialog -->
+<hlm-dialog [state]="showStatusDialog ? 'open' : 'closed'" (closed)="showStatusDialog = false">
+  <hlm-dialog-content class="sm:max-w-[525px]" *brnDialogContent="let ctx">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        {{ editingStatus ? "Modifier le statut" : "Créer un nouveau statut" }}
+      </h3>
+      <p hlmDialogDescription>
+        {{
+          editingStatus
+            ? "Modifiez les détails du statut."
+            : "Définissez un nouveau statut pour les tâches."
+        }}
+      </p>
+    </hlm-dialog-header>
+
+    <form
+      [formGroup]="statusForm"
+      (ngSubmit)="submitStatus()"
+      class="space-y-4"
+    >
+      <!-- Name field -->
+      <div class="space-y-2">
+        <label hlmLabel for="status-name">Nom du statut *</label>
+        <input
+          hlmInput
+          id="status-name"
+          formControlName="name"
+          placeholder="Ex: En cours, Terminé..."
+        />
+        @if (statusForm.get('name')?.errors && statusForm.get('name')?.touched)
+        {
+        <div class="text-sm text-destructive mt-1">
+          @if (statusForm.get('name')?.errors?.['required']) { Le nom est
+          requis. } @if (statusForm.get('name')?.errors?.['maxlength']) { Le nom
+          ne peut pas dépasser 50 caractères. }
+        </div>
+        }
+      </div>
+
+      <!-- Description field -->
+      <div class="space-y-2">
+        <label hlmLabel for="status-description">Description</label>
+        <input
+          hlmInput
+          id="status-description"
+          formControlName="description"
+          placeholder="Description du statut..."
+        />
+      </div>
+
+      <!-- Color field -->
+      <div class="space-y-2">
+        <label hlmLabel for="status-color">Couleur</label>
+        <div class="space-y-2">
+          <input
+            hlmInput
+            type="color"
+            id="status-color"
+            formControlName="color"
+            class="w-20 h-10"
+          />
+
+          <!-- Color palette -->
+          <div class="flex gap-2 flex-wrap">
+            @for (color of colorPalette; track color) {
+            <button
+              type="button"
+              class="w-6 h-6 rounded border border-border hover:scale-110 transition-transform"
+              [style.background-color]="color"
+              (click)="statusForm.patchValue({ color })"
+            ></button>
+            }
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <hlm-dialog-footer>
+      <button
+        type="button"
+        hlmBtn
+        variant="outline"
+        (click)="closeStatusDialog()"
+      >
+        Annuler
+      </button>
+      <button
+        type="submit"
+        hlmBtn
+        (click)="submitStatus()"
+        [disabled]="
+          !statusForm.valid ||
+          createStatusMutation.isPending() ||
+          updateStatusMutation.isPending()
+        "
+      >
+        @if (createStatusMutation.isPending() ||
+        updateStatusMutation.isPending()) {
+        <span class="mr-2 inline-block animate-spin">⌛</span>
+        }
+        {{ editingStatus ? "Modifier" : "Créer" }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>
+
+<!-- Priority Dialog -->
+<hlm-dialog [state]="showPriorityDialog ? 'open' : 'closed'" (closed)="showPriorityDialog = false">
+  <hlm-dialog-content class="sm:max-w-[725px]" *brnDialogContent="let ctx">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>
+        {{
+          editingPriority
+            ? "Modifier la priorité"
+            : "Créer une nouvelle priorité"
+        }}
+      </h3>
+      <p hlmDialogDescription>
+        {{
+          editingPriority
+            ? "Modifiez les détails de la priorité."
+            : "Définissez une nouvelle priorité avec ses états personnalisés."
+        }}
+      </p>
+    </hlm-dialog-header>
+
+    <form
+      [formGroup]="priorityForm"
+      (ngSubmit)="submitPriority()"
+      class="space-y-4"
+    >
+      <!-- Basic fields -->
+      <div class="grid grid-cols-2 gap-4">
+        <!-- Name field -->
+        <div class="space-y-2">
+          <label hlmLabel for="priority-name">Nom de la priorité *</label>
+          <input
+            hlmInput
+            id="priority-name"
+            formControlName="name"
+            placeholder="Ex: Urgent, Normal..."
+          />
+        </div>
+
+        <!-- Level field -->
+        <div class="space-y-2">
+          <label hlmLabel for="priority-level">Niveau *</label>
+          <input
+            hlmInput
+            type="number"
+            id="priority-level"
+            formControlName="level"
+            min="1"
+            placeholder="1"
+          />
+        </div>
+      </div>
+
+      <!-- Description field -->
+      <div class="space-y-2">
+        <label hlmLabel for="priority-description">Description</label>
+        <input
+          hlmInput
+          id="priority-description"
+          formControlName="description"
+          placeholder="Description de la priorité..."
+        />
+      </div>
+
+      <!-- Color field -->
+      <div class="space-y-2">
+        <label hlmLabel for="priority-color">Couleur</label>
+        <div class="space-y-2">
+          <input
+            hlmInput
+            type="color"
+            id="priority-color"
+            formControlName="color"
+            class="w-20 h-10"
+          />
+
+          <!-- Color palette -->
+          <div class="flex gap-2 flex-wrap">
+            @for (color of colorPalette; track color) {
+            <button
+              type="button"
+              class="w-6 h-6 rounded border border-border hover:scale-110 transition-transform"
+              [style.background-color]="color"
+              (click)="priorityForm.patchValue({ color })"
+            ></button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- States configuration -->
+      <div class="space-y-4">
+        <div>
+          <h4 hlmH3 class="mb-2">Configuration des états</h4>
+          <p hlmMuted class="text-sm">
+            Définissez comment cette priorité se comporte dans chaque état du
+            workflow.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4">
+          <!-- Todo State -->
+          <div class="space-y-2">
+            <label hlmLabel for="todo-state">État "À faire"</label>
+            <hlm-select formControlName="todoState">
+              <hlm-select-trigger class="w-full">
+                <hlm-select-value placeholder="Sélectionnez un état" />
+              </hlm-select-trigger>
+              <hlm-select-content>
+                @for (state of priorityStates; track state.value) {
+                <hlm-option [value]="state.value">
+                  <div class="space-y-1">
+                    <div class="font-medium">{{ state.label }}</div>
+                    <div class="text-xs text-muted-foreground">
+                      {{ state.description }}
+                    </div>
+                  </div>
+                </hlm-option>
+                }
+              </hlm-select-content>
+            </hlm-select>
+          </div>
+
+          <!-- Doing State -->
+          <div class="space-y-2">
+            <label hlmLabel for="doing-state">État "En cours"</label>
+            <hlm-select formControlName="doingState">
+              <hlm-select-trigger class="w-full">
+                <hlm-select-value placeholder="Sélectionnez un état" />
+              </hlm-select-trigger>
+              <hlm-select-content>
+                @for (state of priorityStates; track state) {
+                <hlm-option [value]="state.value">
+                  <div class="space-y-1">
+                    <div class="font-medium">{{ state.label }}</div>
+                    <div class="text-xs text-muted-foreground">
+                      {{ state.description }}
+                    </div>
+                  </div>
+                </hlm-option>
+                }
+              </hlm-select-content>
+            </hlm-select>
+          </div>
+
+          <!-- Finish State -->
+          <div class="space-y-2">
+            <label hlmLabel for="finish-state">État "Terminé"</label>
+            <hlm-select formControlName="finishState">
+              <hlm-select-trigger class="w-full">
+                <hlm-select-value placeholder="Sélectionnez un état" />
+              </hlm-select-trigger>
+              <hlm-select-content>
+                @for (state of priorityStates; track state) {
+                <hlm-option [value]="state.value">
+                  <div class="space-y-1">
+                    <div class="font-medium">{{ state.label }}</div>
+                    <div class="text-xs text-muted-foreground">
+                      {{ state.description }}
+                    </div>
+                  </div>
+                </hlm-option>
+                }
+              </hlm-select-content>
+            </hlm-select>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <hlm-dialog-footer>
+      <button
+        type="button"
+        hlmBtn
+        variant="outline"
+        (click)="closePriorityDialog()"
+      >
+        Annuler
+      </button>
+      <button
+        type="submit"
+        hlmBtn
+        (click)="submitPriority()"
+        [disabled]="
+          !priorityForm.valid ||
+          createPriorityMutation.isPending() ||
+          updatePriorityMutation.isPending()
+        "
+      >
+        @if (createPriorityMutation.isPending() ||
+        updatePriorityMutation.isPending()) {
+        <span class="mr-2 inline-block animate-spin">⌛</span>
+        }
+        {{ editingPriority ? "Modifier" : "Créer" }}
+      </button>
+    </hlm-dialog-footer>
+  </hlm-dialog-content>
+</hlm-dialog>

@@ -1,19 +1,168 @@
-<mat-card class="project-list-card">
-  <h2>Mes projets</h2>
+<!-- Project List Header -->
+<div class="space-y-6">
+  <!-- Header Section -->
+  <div class="flex items-center justify-between">
+    <div class="space-y-1">
+      <h1 hlmH1 class="text-3xl font-bold tracking-tight">Mes Projets</h1>
+      <p hlmMuted>Gérez et visualisez tous vos projets en cours</p>
+    </div>
+    <a routerLink="/projects/create" 
+       hlmBtn 
+       class="gap-2">
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Nouveau Projet
+    </a>
+  </div>
+
+  <!-- Loading State -->
   @if (projectsQuery.isLoading()) {
-    <p>Chargement...</p>
-  } @else if (projectsQuery.isError()) {
-    <p>Erreur lors du chargement des projets.</p>
-  } @else if ((projectsQuery.data() ?? []).length === 0) {
-    <p>Aucun projet pour le moment.</p>
-  } @else {
-    <ul>
-      @for (project of projectsQuery.data(); track project.id) {
-        <li>
-          <span>{{ project.name }}</span>
-          <button mat-button color="primary" (click)="goToProject(project.id)">Voir</button>
-        </li>
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      @for (item of [1,2,3,4,5,6]; track item) {
+        <div hlmCard class="p-6">
+          <hlm-skeleton class="h-6 w-3/4 mb-4"></hlm-skeleton>
+          <hlm-skeleton class="h-4 w-full mb-2"></hlm-skeleton>
+          <hlm-skeleton class="h-4 w-2/3 mb-4"></hlm-skeleton>
+          <div class="flex justify-between items-center">
+            <hlm-skeleton class="h-5 w-16"></hlm-skeleton>
+            <hlm-skeleton class="h-9 w-20"></hlm-skeleton>
+          </div>
+        </div>
       }
-    </ul>
+    </div>
   }
-</mat-card>
+
+  <!-- Error State -->
+  @else if (projectsQuery.isError()) {
+    <div hlmCard class="p-8 text-center">
+      <div class="flex flex-col items-center gap-4">
+        <div class="rounded-full bg-destructive/10 p-4">
+          <svg class="h-8 w-8 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <div class="space-y-2">
+          <h3 hlmH3>Erreur de chargement</h3>
+          <p hlmMuted>Impossible de charger vos projets. Veuillez réessayer.</p>
+        </div>
+        <button hlmBtn variant="outline" (click)="projectsQuery.refetch()">
+          Réessayer
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Empty State -->
+  @else if ((projectsQuery.data() ?? []).length === 0) {
+    <div hlmCard class="p-12 text-center">
+      <div class="flex flex-col items-center gap-4">
+        <div class="rounded-full bg-muted p-6">
+          <svg class="h-12 w-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+          </svg>
+        </div>
+        <div class="space-y-2">
+          <h3 hlmH3>Aucun projet</h3>
+          <p hlmMuted class="max-w-md">Vous n'avez pas encore de projets. Créez votre premier projet pour commencer.</p>
+        </div>
+        <a routerLink="/projects/create" 
+           hlmBtn
+           class="gap-2">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Créer mon premier projet
+        </a>
+      </div>
+    </div>
+  }
+
+  <!-- Projects Grid -->
+  @else {
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      @for (project of projectsQuery.data(); track project.id) {
+        <div hlmCard class="group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
+          <!-- Project Header -->
+          <div class="p-6 pb-4">
+            <div class="flex items-start justify-between mb-3">
+              <h3 hlmH3 class="font-semibold leading-tight group-hover:text-primary transition-colors">
+                {{ project.name }}
+              </h3>
+              <span hlmBadge variant="secondary" class="text-xs">
+                Actif
+              </span>
+            </div>
+            
+            <!-- Description -->
+            <p hlmMuted class="text-sm line-clamp-2 mb-4">
+              {{ project.description || 'Aucune description disponible' }}
+            </p>
+            
+            <!-- Project Meta -->
+            <div class="space-y-2 mb-4">
+              @if (project.startDate) {
+                <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                  <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  Créé le {{ project.startDate | date:'short':'fr' }}
+                </div>
+              }
+              
+              <!-- Team Size (placeholder) -->
+              <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM9 3a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                Équipe
+              </div>
+            </div>
+          </div>
+          
+          <!-- Card Footer -->
+          <div hlmSeparator class="mb-0"></div>
+          <div class="p-6 pt-4 bg-muted/20">
+            <div class="flex items-center justify-between">
+              <!-- Quick Actions -->
+              <div class="flex gap-2">
+                <button hlmBtn 
+                        variant="ghost" 
+                        size="sm"
+                        (click)="goToProject(project.id)"
+                        class="h-8 px-2 text-xs">
+                  <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                  Voir
+                </button>
+                <a routerLink="/projects/{{ project.id }}/tasks" 
+                   hlmBtn 
+                   variant="ghost" 
+                   size="sm"
+                   class="h-8 px-2 text-xs">
+                  <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                  </svg>
+                  Tâches
+                </a>
+              </div>
+              
+              <!-- Primary Action -->
+              <button hlmBtn 
+                      size="sm" 
+                      (click)="goToProject(project.id)"
+                      class="gap-1">
+                Ouvrir
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

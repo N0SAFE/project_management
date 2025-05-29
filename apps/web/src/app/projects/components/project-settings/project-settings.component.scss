@@ -1,0 +1,48 @@
+/* Project Settings Component Styles */
+
+.color-indicator {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 1px solid hsl(var(--border));
+}
+
+.color-palette-item {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid hsl(var(--border));
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+}
+
+.color-palette-item:hover {
+  transform: scale(1.1);
+}
+
+/* Color input styling */
+input[type="color"] {
+  border: 0;
+  padding: 0;
+  width: 5rem;
+  height: 2.5rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+/* Dialog content max height for scrolling */
+::ng-deep .hlm-dialog-content {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Responsive grid adjustments */
+@media (max-width: 768px) {
+  .grid-cols-2 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
