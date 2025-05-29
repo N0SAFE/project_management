@@ -14,7 +14,7 @@ services:
         volumes:
             - db_data:/var/lib/mysql
         expose:
-          - "3306:3306" # Expose MySQL port to other services in the same network
+            - "3306:3306" # Expose MySQL port to other services in the same network
 
     api:
         build:
@@ -43,7 +43,10 @@ services:
         depends_on:
             - api
         ports:
-            - "4200:4000"
+            - "4200:4200"
+        environment:
+            - NODE_ENV=development
+            - API_URL=http://api:8080/api
 
 volumes:
     db_data:

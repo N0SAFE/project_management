@@ -1,0 +1,39 @@
+version: "3.8"
+
+# Development overrides for Docker Compose
+# Use: docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml up
+
+services:
+  api:
+    restart: on-failure
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+      - SPRING_DEVTOOLS_LIVERELOAD_ENABLED=true
+      - SPRING_DEVTOOLS_RESTART_POLL_INTERVAL=1000
+      - SPRING_DEVTOOLS_RESTART_QUIET_PERIOD=400
+    ports:
+      - "35729:35729"  # LiveReload port for Spring Boot DevTools
+    volumes:
+      - ./apps/api/src:/app/src:cached  # Mount source code for hot reload
+      - ./apps/api/pom.xml:/app/pom.xml:cached  # Mount pom.xml for dependency changes
+    command: ["./mvnw", "spring-boot:run", "-Dspring-boot.run.jvmArguments=-Dspring.devtools.restart.enabled=true -Dspring.devtools.livereload.enabled=true"]
+
+  web:
+    ports:
+      - "49153:49153"  # HMR WebSocket port
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true  # Enable file watching in Docker
+      - WATCHPACK_POLLING=true    # Additional polling for file changes
+      - NG_CLI_ANALYTICS=false    # Disable Angular analytics
+    volumes:
+      - ./apps/web/src:/app/src:cached           # Mount source code
+      - ./apps/web/angular.json:/app/angular.json:cached
+      - ./apps/web/tsconfig.json:/app/tsconfig.json:cached
+      - ./apps/web/tsconfig.app.json:/app/tsconfig.app.json:cached
+      - ./apps/web/tailwind.config.js:/app/tailwind.config.js:cached
+      - ./apps/web/postcss.config.js:/app/postcss.config.js:cached
+      - ./apps/web/package.json:/app/package.json:cached
+      - /app/node_modules  # Anonymous volume to prevent node_modules mounting
+    command: ["npm", "run", "start:hmr"]

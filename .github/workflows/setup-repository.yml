@@ -1,0 +1,165 @@
+name: Setup Repository Configuration
+
+on:
+    workflow_dispatch: # Manual trigger only
+        inputs:
+            branch_name:
+                description: "Branch name to protect (default: master)"
+                required: false
+                default: "master"
+
+jobs:
+    setup-branch-protection:
+        name: Setup Branch Protection Rules
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Setup Branch Protection
+              uses: actions/github-script@v7
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  script: |
+                      const branchName = '${{ github.event.inputs.branch_name }}' || 'master';
+
+                      try {
+                        // Create or update branch protection rule
+                        const response = await github.rest.repos.updateBranchProtection({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          branch: branchName,
+                          required_status_checks: {
+                            strict: true,
+                            contexts: [
+                              'API Tests & Build',
+                              'Web Tests & Build', 
+                              'Integration Tests',
+                              'Security Scan',
+                              'Enforce Branch Protection Rules'
+                            ]
+                          },
+                          enforce_admins: false,
+                          required_pull_request_reviews: {
+                            required_approving_review_count: 1,
+                            dismiss_stale_reviews: true,
+                            require_code_owner_reviews: false,
+                            require_last_push_approval: false
+                          },
+                          restrictions: null,
+                          allow_force_pushes: false,
+                          allow_deletions: false,
+                          block_creations: false,
+                          required_conversation_resolution: true,
+                          required_linear_history: false
+                        });
+                        
+                        console.log(`✅ Branch protection rules set for ${branchName}`);
+                        console.log('Protection rules:', JSON.stringify(response.data, null, 2));
+                        
+                      } catch (error) {
+                        console.error('❌ Failed to set branch protection rules:', error.message);
+                        
+                        // If branch doesn't exist, create it first
+                        if (error.status === 404) {
+                          console.log(`Branch ${branchName} not found. Make sure it exists first.`);
+                        }
+                        
+                        throw error;
+                      }
+
+    create-environments:
+        name: Create Deployment Environments
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Create Staging Environment
+              uses: actions/github-script@v7
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  script: |
+                      try {
+                        await github.rest.repos.createOrUpdateEnvironment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          environment_name: 'staging',
+                          wait_timer: 0,
+                          reviewers: [],
+                          deployment_branch_policy: {
+                            protected_branches: false,
+                            custom_branch_policies: true
+                          }
+                        });
+                        console.log('✅ Staging environment created');
+                      } catch (error) {
+                        console.log('ℹ️ Staging environment might already exist:', error.message);
+                      }
+
+            - name: Create Production Environment
+              uses: actions/github-script@v7
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  script: |
+                      try {
+                        await github.rest.repos.createOrUpdateEnvironment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          environment_name: 'production',
+                          wait_timer: 5, // 5 minute wait before deployment
+                          reviewers: [
+                            // Add required reviewers here - you'll need to update this with actual user IDs
+                            // { type: 'User', id: 12345 }
+                          ],
+                          deployment_branch_policy: {
+                            protected_branches: true,
+                            custom_branch_policies: false
+                          }
+                        });
+                        console.log('✅ Production environment created with protection rules');
+                      } catch (error) {
+                        console.log('ℹ️ Production environment setup:', error.message);
+                      }
+
+    setup-labels:
+        name: Create Standard Labels
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Create Labels
+              uses: actions/github-script@v7
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  script: |
+                      const labels = [
+                        { name: 'bug', color: 'd73a4a', description: 'Something isn\'t working' },
+                        { name: 'enhancement', color: 'a2eeef', description: 'New feature or request' },
+                        { name: 'documentation', color: '0075ca', description: 'Improvements or additions to documentation' },
+                        { name: 'good first issue', color: '7057ff', description: 'Good for newcomers' },
+                        { name: 'help wanted', color: '008672', description: 'Extra attention is needed' },
+                        { name: 'priority:high', color: 'ff0000', description: 'High priority issue' },
+                        { name: 'priority:medium', color: 'ff9500', description: 'Medium priority issue' },
+                        { name: 'priority:low', color: '0e8a16', description: 'Low priority issue' },
+                        { name: 'type:feature', color: '1f77b4', description: 'New feature' },
+                        { name: 'type:bugfix', color: 'd4edda', description: 'Bug fix' },
+                        { name: 'type:hotfix', color: 'f8d7da', description: 'Critical hotfix' },
+                        { name: 'status:in-progress', color: 'fbca04', description: 'Work in progress' },
+                        { name: 'status:blocked', color: 'e11d21', description: 'Blocked by other work' },
+                        { name: 'status:ready-for-review', color: '0075ca', description: 'Ready for code review' }
+                      ];
+
+                      for (const label of labels) {
+                        try {
+                          await github.rest.issues.createLabel({
+                            owner: context.repo.owner,
+                            repo: context.repo.repo,
+                            name: label.name,
+                            color: label.color,
+                            description: label.description
+                          });
+                          console.log(`✅ Created label: ${label.name}`);
+                        } catch (error) {
+                          if (error.status === 422) {
+                            console.log(`ℹ️ Label already exists: ${label.name}`);
+                          } else {
+                            console.error(`❌ Failed to create label ${label.name}:`, error.message);
+                          }
+                        }
+                      }

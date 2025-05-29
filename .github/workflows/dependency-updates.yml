@@ -1,0 +1,80 @@
+name: Dependency Updates
+
+on:
+    schedule:
+        # Run weekly on Mondays at 9 AM UTC
+        - cron: "0 9 * * MON"
+    workflow_dispatch: # Allow manual triggering
+
+jobs:
+    update-dependencies:
+        name: Update Dependencies
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+
+            - name: Set up JDK 21
+              uses: actions/setup-java@v4
+              with:
+                  java-version: "21"
+                  distribution: "temurin"
+
+            - name: Update npm dependencies
+              working-directory: ./apps/web
+              run: |
+                  # Update package.json
+                  npx npm-check-updates -u
+                  npm install
+
+            - name: Update Maven dependencies
+              working-directory: ./apps/api
+              run: |
+                  # Use Maven versions plugin to update dependencies
+                  ./mvnw versions:use-latest-versions -DallowSnapshots=false
+                  ./mvnw versions:update-properties
+
+            - name: Run tests to ensure compatibility
+              run: |
+                  # Test API
+                  cd apps/api
+                  ./mvnw clean test
+                  cd ../..
+
+                  # Test Web
+                  cd apps/web
+                  npm test -- --watch=false --browsers=ChromeHeadless
+                  cd ../..
+
+            - name: Create Pull Request
+              uses: peter-evans/create-pull-request@v5
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  commit-message: "chore(deps): update dependencies"
+                  title: "chore(deps): Weekly dependency updates"
+                  body: |
+                      ## Automated Dependency Updates
+
+                      This PR contains automated dependency updates:
+
+                      ### Changes
+                      - Updated npm dependencies in `/apps/web`
+                      - Updated Maven dependencies in `/apps/api`
+
+                      ### Testing
+                      - ✅ API tests passed
+                      - ✅ Web tests passed
+
+                      Please review the changes and merge if everything looks good.
+
+                      **Note**: This PR was created automatically by the dependency update workflow.
+                  branch: chore/dependency-updates
+                  delete-branch: true

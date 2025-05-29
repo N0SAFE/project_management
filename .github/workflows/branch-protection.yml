@@ -1,0 +1,59 @@
+name: Branch Protection Check
+
+on:
+    pull_request:
+        branches: [master, main]
+
+jobs:
+    enforce-branch-protection:
+        name: Enforce Branch Protection Rules
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Check PR source branch
+              run: |
+                  echo "Source branch: ${{ github.head_ref }}"
+                  echo "Target branch: ${{ github.base_ref }}"
+
+                  # Ensure PR is coming from a feature branch, not master/main
+                  if [[ "${{ github.head_ref }}" == "master" || "${{ github.head_ref }}" == "main" ]]; then
+                    echo "❌ Direct pushes to master/main are not allowed!"
+                    echo "Please create a feature branch and submit a pull request."
+                    exit 1
+                  fi
+
+                  # Ensure proper branch naming convention
+                  if [[ ! "${{ github.head_ref }}" =~ ^(feature|bugfix|hotfix|docs)\/[a-zA-Z0-9\-_]+$ ]]; then
+                    echo "⚠️  Branch name doesn't follow convention: feature/, bugfix/, hotfix/, or docs/"
+                    echo "Current branch: ${{ github.head_ref }}"
+                    echo "Please rename your branch to follow the naming convention."
+                    # Note: This is a warning, not a failure - adjust as needed
+                  fi
+
+            - name: Check commit message format
+              uses: actions/checkout@v4
+
+            - name: Validate commit messages
+              run: |
+                  # Get the commit messages in this PR
+                  git log --format=%s ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} > commit_messages.txt
+
+                  # Check each commit message
+                  while IFS= read -r message; do
+                    echo "Checking commit: $message"
+                    
+                    # Check if commit message follows conventional commits format
+                    if [[ ! "$message" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\(.+\))?: .+ ]]; then
+                      echo "⚠️  Commit message doesn't follow conventional format: $message"
+                      echo "Expected format: type(scope): description"
+                      echo "Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build"
+                    fi
+                  done < commit_messages.txt
+
+            - name: Summary
+              run: |
+                  echo "✅ Branch protection checks completed"
+                  echo "📋 Summary:"
+                  echo "  - Source branch: ${{ github.head_ref }}"
+                  echo "  - Target branch: ${{ github.base_ref }}"
+                  echo "  - Pull request title: ${{ github.event.pull_request.title }}"
