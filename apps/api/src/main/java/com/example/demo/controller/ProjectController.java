@@ -1,18 +1,25 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.Project;
-import com.example.demo.model.ProjectMember;
-import com.example.demo.model.User;
-import com.example.demo.service.ProjectService;
-import com.example.demo.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.demo.model.Project;
+import com.example.demo.model.ProjectMember;
+import com.example.demo.model.User;
+import com.example.demo.security.UserPrincipal;
+import com.example.demo.service.ProjectService;
+import com.example.demo.service.UserService;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -29,12 +36,14 @@ public class ProjectController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createProject(@RequestBody Map<String, String> body, Principal principal) {
+    public ResponseEntity<?> createProject(@RequestBody Map<String, String> body, Authentication authentication) {
         String name = body.get("name");
         String description = body.get("description");
         LocalDate startDate = LocalDate.parse(body.get("startDate"));
-        User creator = userService.findByEmail(principal.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+        User creator = userPrincipal.getUser();
+        
         Project project = projectService.createProject(name, description, startDate, creator);
         return ResponseEntity.ok(project);
     }
@@ -54,11 +63,13 @@ public class ProjectController {
     }
 
     @PostMapping("/{id}/invite")
-    public ResponseEntity<?> inviteMember(@PathVariable Long id, @RequestBody Map<String, String> body, Principal principal) {
+    public ResponseEntity<?> inviteMember(@PathVariable Long id, @RequestBody Map<String, String> body, Authentication authentication) {
         Project project = projectService.getProject(id)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
-        User admin = userService.findByEmail(principal.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+        User admin = userPrincipal.getUser();
+        
         if (!projectService.isAdmin(project, admin)) {
             return ResponseEntity.status(403).body("Only admins can invite members");
         }
@@ -69,11 +80,13 @@ public class ProjectController {
     }
 
     @PostMapping("/{id}/members/{userId}/role")
-    public ResponseEntity<?> changeMemberRole(@PathVariable Long id, @PathVariable Long userId, @RequestBody Map<String, String> body, Principal principal) {
+    public ResponseEntity<?> changeMemberRole(@PathVariable Long id, @PathVariable Long userId, @RequestBody Map<String, String> body, Authentication authentication) {
         Project project = projectService.getProject(id)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
-        User admin = userService.findByEmail(principal.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+        User admin = userPrincipal.getUser();
+        
         if (!projectService.isAdmin(project, admin)) {
             return ResponseEntity.status(403).body("Only admins can change roles");
         }

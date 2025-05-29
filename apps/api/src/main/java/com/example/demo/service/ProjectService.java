@@ -22,6 +22,8 @@ public class ProjectService {
     private ProjectMemberRepository projectMemberRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private ProjectSettingsService projectSettingsService;
 
     public List<Project> getAllProjects() {
         return projectRepository.findAll();
@@ -37,11 +39,17 @@ public class ProjectService {
         project.setDescription(description);
         project.setStartDate(startDate);
         project = projectRepository.save(project);
+        
+        // Add creator as admin member
         ProjectMember member = new ProjectMember();
         member.setProject(project);
         member.setUser(creator);
         member.setRole(ProjectMember.ProjectRole.ADMIN);
         projectMemberRepository.save(member);
+        
+        // Initialize default project settings
+        projectSettingsService.initializeDefaultProjectSettings(project);
+        
         return project;
     }
 
@@ -77,5 +85,10 @@ public class ProjectService {
         return projectMemberRepository.findByProjectAndUser(project, user)
                 .map(m -> m.getRole() == ProjectMember.ProjectRole.ADMIN)
                 .orElse(false);
+    }
+
+    public boolean isMember(Project project, User user) {
+        return projectMemberRepository.findByProjectAndUser(project, user)
+                .isPresent();
     }
 }
