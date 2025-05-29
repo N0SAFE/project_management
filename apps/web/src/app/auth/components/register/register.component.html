@@ -1,0 +1,111 @@
+<!-- Professional Register Card -->
+<div class="w-full max-w-md space-y-8">
+  <!-- Header -->
+  <div class="text-center space-y-4">
+    <div class="mx-auto h-16 w-16 bg-primary/10 rounded-xl flex items-center justify-center">
+      <svg class="h-8 w-8 text-primary" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+      </svg>
+    </div>
+    <div class="space-y-2">
+      <h1 hlmH1 class="text-2xl font-bold text-center">Créer un compte</h1>
+      <p hlmMuted class="text-center">Rejoignez-nous pour gérer vos projets efficacement</p>
+    </div>
+  </div>
+
+  <!-- Register Form Card -->
+  <div hlmCard class="p-8">
+    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-6">
+      <!-- Username Field -->
+      <app-form-field 
+        label="Nom d'utilisateur" 
+        controlName="username" 
+        [errorMap]="{ required: 'Nom requis', minlength: '3 caractères minimum', maxlength: '50 caractères maximum' }">
+        <input 
+          hlmInput 
+          formControlName="username" 
+          type="text" 
+          required 
+          autocomplete="username" 
+          placeholder="Votre nom d'utilisateur"
+          class="w-full" />
+      </app-form-field>
+
+      <!-- Email Field -->
+      <app-form-field 
+        label="Adresse email" 
+        controlName="email" 
+        [errorMap]="{ required: 'Email requis', email: 'Format email invalide' }">
+        <input 
+          hlmInput 
+          formControlName="email" 
+          type="email" 
+          required 
+          autocomplete="email" 
+          placeholder="votre@email.com"
+          class="w-full" />
+      </app-form-field>
+
+      <!-- Password Field -->
+      <app-form-field 
+        label="Mot de passe" 
+        controlName="password" 
+        [errorMap]="{ required: 'Mot de passe requis', minlength: '6 caractères minimum' }">
+        <input 
+          hlmInput 
+          formControlName="password" 
+          type="password" 
+          required 
+          autocomplete="new-password" 
+          placeholder="••••••••"
+          class="w-full" />
+      </app-form-field>
+
+      <!-- Error Alert -->
+      @if (errorMsg()) {
+        <div hlmAlert variant="destructive" class="border border-destructive/50">
+          <svg hlmAlertIcon class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <div hlmAlertTitle>Erreur d'inscription</div>
+          <div hlmAlertDescription>{{ errorMsg() }}</div>
+        </div>
+      }
+
+      <!-- Submit Button -->
+      <button 
+        hlmBtn 
+        type="submit"
+        class="w-full gap-2"
+        [disabled]="loading()">
+        @if (loading()) {
+          <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Création en cours...
+        } @else {
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+          </svg>
+          Créer mon compte
+        }
+      </button>
+    </form>
+  </div>
+
+  <!-- Login Link -->
+  <div class="text-center">
+    <div hlmSeparator class="mb-6"></div>
+    <p hlmMuted class="mb-4">Vous avez déjà un compte ?</p>
+    <a routerLink="/login" 
+       hlmBtn 
+       variant="outline" 
+       class="w-full gap-2">
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+      </svg>
+      Se connecter
+    </a>
+  </div>
+</div>

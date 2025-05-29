@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './auth/login/login.component';
-import { RegisterComponent } from './auth/register/register.component';
-import { authGuard } from './auth/auth.guard';
+import { LoginComponent } from './auth/components/login/login.component';
+import { RegisterComponent } from './auth/components/register/register.component';
+import { authGuard } from './auth/guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'projects', pathMatch: 'full' },
@@ -15,6 +15,16 @@ export const routes: Routes = [
       { path: 'create', loadComponent: () => import('./projects/components/project-create/project-create.component').then(m => m.ProjectCreateComponent) },
       { path: ':id', loadComponent: () => import('./projects/components/project-detail/project-detail.component').then(m => m.ProjectDetailComponent) },
       { path: ':id/members', loadComponent: () => import('./projects/components/project-members/project-members.component').then(m => m.ProjectMembersComponent) },
+      { path: ':id/settings', loadComponent: () => import('./projects/components/project-settings/project-settings.component').then(m => m.ProjectSettingsComponent) },
+      {
+        children: [
+          { path: ':id/tasks', loadComponent: () => import('./tasks/components/task-list/task-list.component').then(m => m.TaskListComponent) },
+          { path: ':id/tasks/kanban', loadComponent: () => import('./tasks/components/task-kanban/task-kanban.component').then(m => m.TaskKanbanComponent) },
+          { path: ':id/tasks/create', loadComponent: () => import('./tasks/components/task-create-edit/task-create-edit.component').then(m => m.TaskCreateEditComponent) },
+          { path: ':id/tasks/:taskId', loadComponent: () => import('./tasks/components/task-detail/task-detail.component').then(m => m.TaskDetailComponent) },
+          { path: ':id/tasks/:taskId/edit', loadComponent: () => import('./tasks/components/task-create-edit/task-create-edit.component').then(m => m.TaskCreateEditComponent) },
+        ]
+      }
     ]
-  }
+  },
 ];

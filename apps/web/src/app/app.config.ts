@@ -1,6 +1,6 @@
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
 import {
   provideClientHydration,
@@ -11,12 +11,14 @@ import {
   provideTanStackQuery,
   withDevtools,
 } from '@tanstack/angular-query-experimental';
+import { authInterceptor } from './auth/interceptors/auth.interceptor';
+import { ssrCookieInterceptor } from './auth/interceptors/ssr-cookie.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(),
+    provideHttpClient(withFetch(), withInterceptors([ssrCookieInterceptor, authInterceptor])),
     provideClientHydration(withEventReplay()),
     provideTanStackQuery(
       new QueryClient(),
