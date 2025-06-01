@@ -29,8 +29,10 @@ public class TaskService {
     private TaskPriorityRepository taskPriorityRepository;
     @Autowired
     private TaskStatusRepository taskStatusRepository;
+    @Autowired
+    private TaskHistoryService taskHistoryService;
 
-    public Task createTask(Long projectId, String name, String description, String dueDate, Long priorityId, Long statusId, Long assigneeId) {
+    public Task createTask(Long projectId, String name, String description, String dueDate, Long priorityId, Long statusId, Long assigneeId, User createdBy) {
         Project project = projectRepository.findById(projectId).orElseThrow(() -> new IllegalArgumentException("Project not found"));
         User assignee = null;
         if (assigneeId != null) {
@@ -68,7 +70,12 @@ public class TaskService {
         }
         
         task.setAssignee(assignee);
-        return taskRepository.save(task);
+        task = taskRepository.save(task);
+        
+        // Record task creation in history
+        taskHistoryService.recordTaskCreation(task, createdBy);
+        
+        return task;
     }
 
     public Optional<Task> getTask(Long id) {
@@ -80,32 +87,56 @@ public class TaskService {
         return taskRepository.findByProjectWithRelationships(project);
     }
 
-    public Task updateTask(Long taskId, String name, String description, String dueDate, Long priorityId, Long statusId, Long assigneeId) {
-        Task task = taskRepository.findByIdWithRelationships(taskId).orElseThrow(() -> new IllegalArgumentException("Task not found"));
-        if (name != null) task.setName(name);
-        if (description != null) task.setDescription(description);
-        if (dueDate != null) task.setDueDate(java.time.LocalDate.parse(dueDate));
+    public Task updateTask(Long taskId, String name, String description, String dueDate, Long priorityId, Long statusId, Long assigneeId, User modifiedBy) {
+        Task oldTask = taskRepository.findByIdWithRelationships(taskId).orElseThrow(() -> new IllegalArgumentException("Task not found"));
+        
+        // Create a copy of the old task for history comparison
+        Task taskCopy = new Task();
+        taskCopy.setId(oldTask.getId());
+        taskCopy.setName(oldTask.getName());
+        taskCopy.setDescription(oldTask.getDescription());
+        taskCopy.setDueDate(oldTask.getDueDate());
+        taskCopy.setPriority(oldTask.getPriority());
+        taskCopy.setStatus(oldTask.getStatus());
+        taskCopy.setAssignee(oldTask.getAssignee());
+        taskCopy.setProject(oldTask.getProject());
+        
+        // Apply updates
+        if (name != null) oldTask.setName(name);
+        if (description != null) oldTask.setDescription(description);
+        if (dueDate != null) oldTask.setDueDate(java.time.LocalDate.parse(dueDate));
         
         if (priorityId != null) {
             TaskPriority priority = taskPriorityRepository.findById(priorityId)
                 .orElseThrow(() -> new IllegalArgumentException("Priority not found"));
-            task.setPriority(priority);
+            oldTask.setPriority(priority);
         }
         
         if (statusId != null) {
             TaskStatus status = taskStatusRepository.findById(statusId)
                 .orElseThrow(() -> new IllegalArgumentException("Status not found"));
-            task.setStatus(status);
+            oldTask.setStatus(status);
         }
         
         if (assigneeId != null) {
             User assignee = userRepository.findById(assigneeId).orElseThrow(() -> new IllegalArgumentException("User not found"));
-            task.setAssignee(assignee);
+            oldTask.setAssignee(assignee);
         }
-        return taskRepository.save(task);
+        
+        Task updatedTask = taskRepository.save(oldTask);
+        
+        // Record changes in history
+        taskHistoryService.recordTaskUpdate(taskCopy, updatedTask, modifiedBy);
+        
+        return updatedTask;
     }
 
-    public void deleteTask(Long taskId) {
+    public void deleteTask(Long taskId, User deletedBy) {
+        Task task = taskRepository.findByIdWithRelationships(taskId).orElseThrow(() -> new IllegalArgumentException("Task not found"));
+        
+        // Record deletion in history before deleting
+        taskHistoryService.recordTaskDeletion(task, deletedBy);
+        
         taskRepository.deleteById(taskId);
     }
 }

@@ -29,15 +29,13 @@ CREATE TABLE task_priority (
     CONSTRAINT uq_task_priority_project_name UNIQUE (project_id, name)
 );
 
--- Add new columns to task table
-ALTER TABLE task 
-ADD COLUMN priority_id BIGINT,
-ADD COLUMN status_id BIGINT;
+-- Add new columns to task table (H2 requires separate ALTER statements)
+ALTER TABLE task ADD COLUMN priority_id BIGINT;
+ALTER TABLE task ADD COLUMN status_id BIGINT;
 
 -- Add foreign key constraints
-ALTER TABLE task 
-ADD CONSTRAINT fk_task_priority_id FOREIGN KEY (priority_id) REFERENCES task_priority(id) ON DELETE SET NULL,
-ADD CONSTRAINT fk_task_status_id FOREIGN KEY (status_id) REFERENCES task_status(id) ON DELETE SET NULL;
+ALTER TABLE task ADD CONSTRAINT fk_task_priority_id FOREIGN KEY (priority_id) REFERENCES task_priority(id) ON DELETE SET NULL;
+ALTER TABLE task ADD CONSTRAINT fk_task_status_id FOREIGN KEY (status_id) REFERENCES task_status(id) ON DELETE SET NULL;
 
 -- Create indexes for performance
 CREATE INDEX idx_task_status_project_id ON task_status(project_id);
