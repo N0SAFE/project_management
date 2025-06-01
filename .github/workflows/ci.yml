@@ -142,6 +142,38 @@ jobs:
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
 
+            - name: Create environment file for integration tests
+              run: |
+                  # Create .env file with integration test values
+                  cat > .env << EOF
+                  NODE_ENV=test
+
+                  # Database Configuration
+                  MYSQL_DATABASE=mydatabase
+                  MYSQL_ROOT_PASSWORD=verysecret
+                  DB_USERNAME=root
+                  DB_PASSWORD=verysecret
+
+                  # Application Configuration
+                  DOCKER_COMPOSE_ENABLED=true
+
+                  # Email Configuration (Test values)
+                  MAIL_HOST=smtp.gmail.com
+                  MAIL_PORT=587
+                  MAIL_USERNAME=test@example.com
+                  MAIL_PASSWORD=test_password
+                  APP_MAIL_FROM=test@example.com
+                  APP_MAIL_NAME=Test Application
+
+                  # Node.js/Angular Configuration
+                  API_URL=http://api:8080/api
+                  CHOKIDAR_USEPOLLING=true
+                  WATCHPACK_POLLING=true
+                  NG_CLI_ANALYTICS=false
+                  EOF
+                  
+                  echo "Created .env file for integration tests"
+
             - name: Build and test with Docker Compose
               run: |
                   # Build all services
@@ -164,7 +196,10 @@ jobs:
 
             - name: Cleanup
               if: always()
-              run: docker compose -f docker-compose.yaml down -v
+              run: |
+                  docker compose -f docker-compose.yaml down -v
+                  # Remove test environment file
+                  rm -f .env
 
     # Job 4: Security Scan
     security-scan:
