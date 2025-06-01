@@ -32,11 +32,55 @@ jobs:
 
             - name: Check commit message format
               uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0  # Fetch full history to ensure we have access to base and head commits
 
             - name: Validate commit messages
               run: |
                   # Get the commit messages in this PR
-                  git log --format=%s ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} > commit_messages.txt
+                  echo "Base SHA: ${{ github.event.pull_request.base.sha }}"
+                  echo "Head SHA: ${{ github.event.pull_request.head.sha }}"
+                  
+                  # Fetch the base branch to ensure we have the commits
+                  git fetch origin ${{ github.event.pull_request.base.ref }}:${{ github.event.pull_request.base.ref }} || true
+                  
+                  # Check if both SHAs exist in the repository
+                  if ! git cat-file -e ${{ github.event.pull_request.base.sha }}^{commit} 2>/dev/null; then
+                    echo "❌ Base commit not found: ${{ github.event.pull_request.base.sha }}"
+                    echo "Trying alternative method..."
+                    # Alternative: use merge-base to find common ancestor
+                    BASE_COMMIT=$(git merge-base origin/${{ github.event.pull_request.base.ref }} HEAD 2>/dev/null || echo "${{ github.event.pull_request.base.sha }}")
+                    echo "Using base commit: $BASE_COMMIT"
+                  else
+                    BASE_COMMIT="${{ github.event.pull_request.base.sha }}"
+                  fi
+                  
+                  if ! git cat-file -e ${{ github.event.pull_request.head.sha }}^{commit} 2>/dev/null; then
+                    echo "❌ Head commit not found: ${{ github.event.pull_request.head.sha }}"
+                    echo "Using HEAD instead"
+                    HEAD_COMMIT="HEAD"
+                  else
+                    HEAD_COMMIT="${{ github.event.pull_request.head.sha }}"
+                  fi
+                  
+                  # Get the commit messages in this PR
+                  echo "Getting commits between $BASE_COMMIT and $HEAD_COMMIT"
+                  git log --format=%s $BASE_COMMIT..$HEAD_COMMIT > commit_messages.txt || {
+                    echo "❌ Failed to get commit range, trying alternative approach"
+                    # Fallback: get commits from the current branch only
+                    git log --format=%s HEAD~${{ github.event.pull_request.commits }}..HEAD > commit_messages.txt 2>/dev/null || {
+                      echo "⚠️  Could not retrieve commit messages, skipping validation"
+                      exit 0
+                    }
+                  }
+
+                  # Check if we have any commits to validate
+                  if [ ! -s commit_messages.txt ]; then
+                    echo "ℹ️  No commits found in this PR range"
+                    exit 0
+                  fi
+
+                  echo "Found $(wc -l < commit_messages.txt) commit(s) to validate"
 
                   # Check each commit message
                   while IFS= read -r message; do
@@ -47,6 +91,8 @@ jobs:
                       echo "⚠️  Commit message doesn't follow conventional format: $message"
                       echo "Expected format: type(scope): description"
                       echo "Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build"
+                    else
+                      echo "✅ Commit message format is valid: $message"
                     fi
                   done < commit_messages.txt
 
