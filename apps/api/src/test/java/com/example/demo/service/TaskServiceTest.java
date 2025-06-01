@@ -4,10 +4,12 @@ import com.example.demo.model.Project;
 import com.example.demo.model.Task;
 import com.example.demo.model.TaskPriority;
 import com.example.demo.model.TaskStatus;
+import com.example.demo.model.User;
 import com.example.demo.repository.ProjectRepository;
 import com.example.demo.repository.TaskRepository;
 import com.example.demo.repository.TaskPriorityRepository;
 import com.example.demo.repository.TaskStatusRepository;
+import com.example.demo.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -29,12 +31,24 @@ class TaskServiceTest {
     private TaskPriorityRepository taskPriorityRepository;
     @Mock
     private TaskStatusRepository taskStatusRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private TaskHistoryService taskHistoryService;
     @InjectMocks
     private TaskService taskService;
+    
+    private User testUser;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        
+        // Setup test user
+        testUser = new User();
+        testUser.setId(1L);
+        testUser.setUsername("testuser");
+        testUser.setEmail("test@example.com");
     }
 
     @Test
@@ -60,7 +74,7 @@ class TaskServiceTest {
         when(taskRepository.save(any(Task.class))).thenAnswer(i -> i.getArgument(0));
         
         // Execute test
-        Task task = taskService.createTask(1L, "Task 1", "desc", null, 1L, 1L, null);
+        Task task = taskService.createTask(1L, "Task 1", "desc", null, 1L, 1L, null, testUser);
         
         // Assertions
         assertEquals("Task 1", task.getName());
@@ -68,13 +82,16 @@ class TaskServiceTest {
         assertEquals(priority, task.getPriority());
         assertEquals(status, task.getStatus());
         assertEquals(project, task.getProject());
+        
+        // Verify history recording
+        verify(taskHistoryService).recordTaskCreation(task, testUser);
     }
 
     @Test
     void getTask_shouldReturnTask() {
         Task task = new Task();
         task.setId(1L);
-        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+        when(taskRepository.findByIdWithRelationships(1L)).thenReturn(Optional.of(task));
         Optional<Task> found = taskService.getTask(1L);
         assertTrue(found.isPresent());
         assertEquals(1L, found.get().getId());
@@ -84,8 +101,8 @@ class TaskServiceTest {
     void createTask_shouldThrowExceptionWhenProjectNotFound() {
         when(projectRepository.findById(1L)).thenReturn(Optional.empty());
         
-        Exception exception = assertThrows(RuntimeException.class, () -> 
-            taskService.createTask(1L, "Task 1", "desc", null, 1L, 1L, null)
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> 
+            taskService.createTask(1L, "Task 1", "desc", null, 1L, 1L, null, testUser)
         );
         
         assertNotNull(exception);
@@ -98,8 +115,8 @@ class TaskServiceTest {
         when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
         when(taskPriorityRepository.findById(1L)).thenReturn(Optional.empty());
         
-        Exception exception = assertThrows(RuntimeException.class, () -> 
-            taskService.createTask(1L, "Task 1", "desc", null, 1L, 1L, null)
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> 
+            taskService.createTask(1L, "Task 1", "desc", null, 1L, 1L, null, testUser)
         );
         
         assertNotNull(exception);
@@ -116,8 +133,8 @@ class TaskServiceTest {
         when(taskPriorityRepository.findById(1L)).thenReturn(Optional.of(priority));
         when(taskStatusRepository.findById(1L)).thenReturn(Optional.empty());
         
-        Exception exception = assertThrows(RuntimeException.class, () -> 
-            taskService.createTask(1L, "Task 1", "desc", null, 1L, 1L, null)
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> 
+            taskService.createTask(1L, "Task 1", "desc", null, 1L, 1L, null, testUser)
         );
         
         assertNotNull(exception);

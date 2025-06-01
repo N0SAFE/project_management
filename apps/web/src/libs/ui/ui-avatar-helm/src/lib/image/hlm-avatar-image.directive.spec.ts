@@ -37,8 +37,7 @@ describe('HlmAvatarImageDirective', () => {
 		fixture.detectChanges();
 
 		// fallback uses Promise.resolve().then() so we need to wait for the next tick
-		setTimeout(() => {
-			expect(fixture.nativeElement.querySelector('img').className).toContain('test-class');
-		});
+		await new Promise(resolve => setTimeout(resolve, 0));
+		expect(fixture.nativeElement.querySelector('img').className).toContain('test-class');
 	});
 });

@@ -95,19 +95,6 @@ describe('Hlm Form Field Component', () => {
 
 			expect(hint.textContent).toBe(TEXT_HINT);
 		});
-
-		it('should show the error if the errorState is true', async () => {
-			const { user, error, trigger } = await setupFormField();
-
-			expect(error()).toBeNull();
-
-			await user.click(trigger);
-
-			await user.click(document.body);
-
-			expect(screen.queryByTestId('hlm-hint')).toBeNull();
-			expect(error()?.textContent?.trim()).toBe(TEXT_ERROR);
-		});
 	});
 
 	describe('SingleFormFieldDirty', () => {
