@@ -23,6 +23,9 @@ ENV MAIL_PASSWORD=${MAIL_PASSWORD}
 ENV APP_MAIL_FROM=${APP_MAIL_FROM}
 ENV APP_MAIL_NAME=${APP_MAIL_NAME}
 
+# Make Maven wrapper executable
+RUN chmod +x ./mvnw
+
 RUN ./mvnw clean package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine

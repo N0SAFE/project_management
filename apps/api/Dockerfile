@@ -31,5 +31,8 @@ EXPOSE 8080
 # Install Maven (if not present)
 RUN apk add --no-cache maven
 
+# Make Maven wrapper executable
+RUN chmod +x ./mvnw
+
 # Use spring-boot:run for HMR/devtools support
 CMD ["./mvnw", "spring-boot:run", "-Dspring-boot.run.jvmArguments=-Dspring.devtools.restart.enabled=true"]
