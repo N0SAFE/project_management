@@ -87,12 +87,14 @@ jobs:
                     echo "Checking commit: $message"
                     
                     # Check if commit message follows conventional commits format
-                    if [[ ! "$message" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\(.+\))?: .+ ]]; then
+                    # Pattern: type(scope): description or type: description
+                    if [[ "$message" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\([^)]+\))?:\ .+ ]]; then
+                      echo "✅ Commit message format is valid: $message"
+                    else
                       echo "⚠️  Commit message doesn't follow conventional format: $message"
                       echo "Expected format: type(scope): description"
                       echo "Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build"
-                    else
-                      echo "✅ Commit message format is valid: $message"
+                      echo "Examples: 'feat(auth): add login functionality' or 'fix: resolve database connection issue'"
                     fi
                   done < commit_messages.txt
 
