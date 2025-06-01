@@ -111,9 +111,9 @@ jobs:
                   # Here you would add your staging deployment script
                   # For example, deploy to a staging server, K8s cluster, etc.
 
-                  # Example with docker-compose (if deploying to a staging server):
+                  # Example with docker compose (if deploying to a staging server):
                   # scp docker-compose.prod.yaml user@staging-server:/path/to/deployment/
-                  # ssh user@staging-server "cd /path/to/deployment && docker-compose -f docker-compose.prod.yaml pull && docker-compose -f docker-compose.prod.yaml up -d"
+                  # ssh user@staging-server "cd /path/to/deployment && docker compose -f docker-compose.prod.yaml pull && docker compose -f docker-compose.prod.yaml up -d"
 
             - name: Run smoke tests on staging
               run: |

@@ -145,10 +145,10 @@ jobs:
             - name: Build and test with Docker Compose
               run: |
                   # Build all services
-                  docker-compose -f docker-compose.yaml build
+                  docker compose -f docker-compose.yaml build
 
                   # Start services
-                  docker-compose -f docker-compose.yaml up -d
+                  docker compose -f docker-compose.yaml up -d
 
                   # Wait for services to be healthy
                   echo "Waiting for services to be ready..."
@@ -164,7 +164,7 @@ jobs:
 
             - name: Cleanup
               if: always()
-              run: docker-compose -f docker-compose.yaml down -v
+              run: docker compose -f docker-compose.yaml down -v
 
     # Job 4: Security Scan
     security-scan:
