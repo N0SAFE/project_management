@@ -155,7 +155,7 @@ jobs:
                   DB_PASSWORD=verysecret
 
                   # Application Configuration
-                  DOCKER_COMPOSE_ENABLED=true
+                  DOCKER_COMPOSE_ENABLED=false
 
                   # Email Configuration (Test values)
                   MAIL_HOST=smtp.gmail.com
