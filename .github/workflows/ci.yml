@@ -180,7 +180,7 @@ jobs:
                   docker compose -f docker-compose.yaml build
 
                   # Start services
-                  docker compose -f docker-compose.yaml up -d
+                  docker compose -f docker-compose.yaml up
 
                   # Show running containers for debugging
                   echo "Running containers:"
