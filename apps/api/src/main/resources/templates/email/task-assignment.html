@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nouvelle tâche assignée</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .task-details {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .priority {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .priority-high { background: #dc3545; color: white; }
+        .priority-medium { background: #ffc107; color: #212529; }
+        .priority-low { background: #28a745; color: white; }
+        .button {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 Nouvelle tâche assignée</h1>
+        </div>
+        <div class="content">
+            <h2>Bonjour {{assigneeName}} !</h2>
+            <p>Une nouvelle tâche vous a été assignée dans le projet <strong>"{{projectName}}"</strong>.</p>
+            
+            <div class="task-details">
+                <h3>📋 Détails de la tâche :</h3>
+                <p><strong>Nom :</strong> {{taskName}}</p>
+                <p><strong>Description :</strong> {{taskDescription}}</p>
+                <p><strong>Date d'échéance :</strong> {{dueDate}}</p>
+                <p><strong>Priorité :</strong> <span class="priority priority-{{priorityLevel}}">{{priorityName}}</span></p>
+                <p><strong>Assignée par :</strong> {{assignedBy}}</p>
+            </div>
+            
+            <p>Cliquez sur le bouton ci-dessous pour voir la tâche :</p>
+            <a href="{{taskLink}}" class="button">Voir la tâche</a>
+        </div>
+        <div class="footer">
+            <p>Cet email a été envoyé par Project Management Tool</p>
+            <p>Vous pouvez modifier vos préférences de notification dans les paramètres.</p>
+        </div>
+    </div>
+</body>
+</html>
