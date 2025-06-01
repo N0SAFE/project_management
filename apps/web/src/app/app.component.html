@@ -88,15 +88,10 @@
 
 <!-- Main Content Area -->
 <main class="flex-1 bg-gradient-to-br from-background to-muted/20">
-  @if (user()) {
   <!-- Dashboard Layout for authenticated users -->
   <div class="container max-w-screen-2xl py-8">
     <router-outlet />
   </div>
-  } @else {
-  <!-- Centered layout for auth pages -->
-  <div class="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
-    <router-outlet />
-  </div>
-  }
 </main>
+<!-- a toaster for notifications -->
+<hlm-toaster richColors />

@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { TaskService } from '../../services/task/task.service';
 import { ProjectSettingsService } from '../../../projects/services/project-settings/project-settings.service';
+import { TaskHistoryService } from '../../services/task-history/task-history.service';
 import { injectQuery } from '@tanstack/angular-query-experimental';
 import { HlmCardDirective } from '@spartan-ng/ui-card-helm';
 import { HlmButtonDirective } from '@spartan-ng/ui-button-helm';
@@ -10,6 +11,7 @@ import { HlmSkeletonComponent } from '@spartan-ng/ui-skeleton-helm';
 import { HlmSeparatorDirective } from '@spartan-ng/ui-separator-helm';
 import { HlmH1Directive, HlmH3Directive, HlmMutedDirective } from '@spartan-ng/ui-typography-helm';
 import { DatePipe } from '@angular/common';
+import { TaskHistoryComponent } from '../task-history/task-history.component';
 
 @Component({
   selector: 'app-task-detail',
@@ -19,11 +21,13 @@ import { DatePipe } from '@angular/common';
     HlmButtonDirective, 
     HlmBadgeDirective,
     HlmSkeletonComponent,
+    HlmSeparatorDirective,
     HlmH1Directive,
     HlmH3Directive,
     HlmMutedDirective,
     RouterModule,
-    DatePipe
+    DatePipe,
+    TaskHistoryComponent
   ],
   templateUrl: './task-detail.component.html',
   styleUrl: './task-detail.component.scss'
@@ -48,7 +52,7 @@ export class TaskDetailComponent {
     // Fallback for legacy data
     switch (status) {
       case 'TODO': return 'À faire';
-      case 'IN_PROGRESS': return 'En cours';
+      case 'IN_PROGRESS': return 'In Progress';
       case 'DONE': return 'Terminé';
       default: return status || 'Non défini';
     }

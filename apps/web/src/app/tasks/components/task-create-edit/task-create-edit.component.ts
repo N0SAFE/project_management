@@ -9,7 +9,6 @@ import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-quer
 import { HlmCardDirective } from '@spartan-ng/ui-card-helm';
 import { HlmButtonDirective } from '@spartan-ng/ui-button-helm';
 import { HlmInputDirective } from '@spartan-ng/ui-input-helm';
-import { HlmAlertDirective, HlmAlertDescriptionDirective, HlmAlertTitleDirective, HlmAlertIconDirective } from '@spartan-ng/ui-alert-helm';
 import { HlmH1Directive, HlmMutedDirective } from '@spartan-ng/ui-typography-helm';
 import { HlmBreadcrumbDirective, HlmBreadcrumbItemDirective, HlmBreadcrumbLinkDirective, HlmBreadcrumbPageDirective, HlmBreadcrumbSeparatorComponent, HlmBreadcrumbListDirective } from '@spartan-ng/ui-breadcrumb-helm';
 import { FormFieldComponent } from '../../../shared/form-field/form-field.component';
@@ -19,6 +18,7 @@ import { BrnSelectImports } from '@spartan-ng/brain/select';
 import { HlmCalendarModule } from "../../../../libs/ui/ui-calendar-helm/src/index";
 import { HlmCalendarComponent } from "../../../../libs/ui/ui-calendar-helm/src/lib/hlm-calendar.component";
 import { HlmAvatarImports } from '@spartan-ng/ui-avatar-helm';
+import { toast } from 'ngx-sonner';
 
 @Component({
   selector: 'app-task-create-edit',
@@ -28,10 +28,6 @@ import { HlmAvatarImports } from '@spartan-ng/ui-avatar-helm';
     HlmCardDirective,
     HlmButtonDirective,
     HlmInputDirective,
-    HlmAlertDirective,
-    HlmAlertDescriptionDirective,
-    HlmAlertTitleDirective,
-    HlmAlertIconDirective,
     HlmH1Directive,
     HlmMutedDirective,
     HlmBreadcrumbDirective,
@@ -67,7 +63,6 @@ export class TaskCreateEditComponent implements OnInit {
     statusId: ['', Validators.required],
     assigneeId: ['']
   });
-  errorMsg = signal('');
   date = new Date();
 
   constructor() {
@@ -144,29 +139,84 @@ export class TaskCreateEditComponent implements OnInit {
 
   createTaskMutation = injectMutation(() => ({
     mutationFn: (data: any) => this.taskService.createTask(data),
-    onSuccess: (task) => {
+    onSuccess: (task: any) => {
       this.queryClient.invalidateQueries({ queryKey: ['tasks', this.projectId] });
+      toast.success('Task Created Successfully', {
+        description: `Task "${task.name}" has been created and you have been redirected to it.`
+      });
       this.router.navigate(['/projects', this.projectId, 'tasks', task.id]);
     },
-    onError: (err: any) => {
-      this.errorMsg.set(err?.message || 'Erreur lors de la création de la tâche');
+    onError: (error: any) => {
+      let errorMessage = 'Failed to Create Task';
+      let errorDescription = 'An unexpected error occurred while creating the task.';
+
+      if (error?.status === 400) {
+        errorMessage = 'Invalid Task Data';
+        errorDescription = 'Please check the task details and ensure all required fields are filled correctly.';
+      } else if (error?.status === 403) {
+        errorMessage = 'Access Denied';
+        errorDescription = 'You do not have permission to create tasks in this project.';
+      } else if (error?.status === 404) {
+        errorMessage = 'Project Not Found';
+        errorDescription = 'The project you are trying to create a task in no longer exists.';
+      } else if (error?.status === 422) {
+        errorMessage = 'Validation Error';
+        errorDescription = error?.message || 'Please check your input and try again.';
+      } else if (error?.status === 0) {
+        errorMessage = 'Connection Error';
+        errorDescription = 'Unable to connect to the server. Please check your internet connection.';
+      }
+
+      toast.error(errorMessage, {
+        description: errorDescription
+      });
     },
   }));
 
   updateTaskMutation = injectMutation(() => ({
     mutationFn: (data: any) => this.taskService.updateTask(this.taskId!, data),
-    onSuccess: (task) => {
+    onSuccess: (task: any) => {
       this.queryClient.invalidateQueries({ queryKey: ['tasks', this.projectId] });
+      toast.success('Task Updated Successfully', {
+        description: `Task "${task.name}" has been successfully updated.`
+      });
       this.router.navigate(['/projects', this.projectId, 'tasks', task.id]);
     },
-    onError: (err: any) => {
-      this.errorMsg.set(err?.message || 'Erreur lors de la modification de la tâche');
+    onError: (error: any) => {
+      let errorMessage = 'Failed to Update Task';
+      let errorDescription = 'An unexpected error occurred while updating the task.';
+
+      if (error?.status === 400) {
+        errorMessage = 'Invalid Task Data';
+        errorDescription = 'Please check the task details and ensure all fields are valid.';
+      } else if (error?.status === 403) {
+        errorMessage = 'Access Denied';
+        errorDescription = 'You do not have permission to update this task.';
+      } else if (error?.status === 404) {
+        errorMessage = 'Task Not Found';
+        errorDescription = 'The task you are trying to update no longer exists.';
+      } else if (error?.status === 409) {
+        errorMessage = 'Conflict Error';
+        errorDescription = 'The task has been modified by another user. Please refresh and try again.';
+      } else if (error?.status === 422) {
+        errorMessage = 'Validation Error';
+        errorDescription = error?.message || 'Please check your input and try again.';
+      } else if (error?.status === 0) {
+        errorMessage = 'Connection Error';
+        errorDescription = 'Unable to connect to the server. Please check your internet connection.';
+      }
+
+      toast.error(errorMessage, {
+        description: errorDescription
+      });
     },
   }));
 
   submit() {
-    this.errorMsg.set('');
     if (this.form.invalid) {
+      toast.error('Invalid Form', {
+        description: 'Please check all required fields before submitting.'
+      });
       return;
     }
     
@@ -247,7 +297,7 @@ export class TaskCreateEditComponent implements OnInit {
     
     switch (status) {
       case 'TODO': return 'À faire - En attente';
-      case 'IN_PROGRESS': return 'En cours - En développement';
+      case 'IN_PROGRESS': return 'In Progress - Under development';
       case 'REVIEW': return 'En révision - Attente validation';
       case 'DONE': return 'Terminé - Complété';
       default: return 'Sélectionnez un statut';

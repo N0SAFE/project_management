@@ -117,21 +117,6 @@ export class TaskListComponent {
     this.router.navigate(['/projects', this.projectId, 'tasks', id]);
   }
 
-  getTaskProgress(status: any): number {
-    // Handle both legacy string format and new TaskStatus object format
-    const statusName = typeof status === 'object' && status?.name ? status.name.toUpperCase() : 
-                      typeof status === 'string' ? status.toUpperCase() : '';
-    
-    if (statusName.includes('TODO') || statusName.includes('FAIRE')) {
-      return 0;
-    } else if (statusName.includes('IN_PROGRESS') || statusName.includes('PROGRESS') || statusName.includes('COURS')) {
-      return 50;
-    } else if (statusName.includes('DONE') || statusName.includes('TERMINÉ') || statusName.includes('COMPLETE')) {
-      return 100;
-    }
-    return 0;
-  }
-
   // Helper methods for display
   getStatusLabel(status: any): string {
     if (status && typeof status === 'object' && status.name) {
@@ -140,7 +125,7 @@ export class TaskListComponent {
     // Fallback for legacy data
     switch (status) {
       case 'TODO': return 'À faire';
-      case 'IN_PROGRESS': return 'En cours';
+      case 'IN_PROGRESS': return 'In Progress';
       case 'DONE': return 'Terminé';
       default: return status || 'Non défini';
     }

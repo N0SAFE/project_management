@@ -227,5 +227,25 @@
         </a>
       </div>
     </div>
+
+    <!-- Task History Section -->
+    <div hlmCard class="p-6">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10">
+          <svg class="h-5 w-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 hlmH3 class="font-semibold">Historique de la tâche</h3>
+          <p class="text-sm text-muted-foreground">Suivi des modifications apportées à cette tâche</p>
+        </div>
+      </div>
+      
+      <div hlmSeparator class="mb-6"></div>
+      
+      <!-- Task History Component -->
+      <app-task-history [taskId]="taskId" [showTaskHistory]="true" [maxItems]="15"></app-task-history>
+    </div>
   }
 </div>

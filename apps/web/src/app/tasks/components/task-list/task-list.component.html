@@ -332,19 +332,6 @@
             </svg>
             {{ task.assignee?.username || "Non assignée" }}
           </div>
-
-          <!-- Progress Bar -->
-          <div class="space-y-2 mt-3">
-            <div class="flex justify-between items-center text-xs">
-              <span class="text-muted-foreground">Progression</span>
-              <span class="font-medium"
-                >{{ getTaskProgress(task.status) }}%</span
-              >
-            </div>
-            <brn-progress hlm [value]="getTaskProgress(task.status)">
-              <brn-progress-indicator hlm />
-            </brn-progress>
-          </div>
         </div>
       </div>
 

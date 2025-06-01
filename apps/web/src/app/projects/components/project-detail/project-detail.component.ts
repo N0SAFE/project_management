@@ -7,10 +7,12 @@ import { HlmCardDirective } from '@spartan-ng/ui-card-helm';
 import { HlmButtonDirective } from '@spartan-ng/ui-button-helm';
 import { HlmBadgeDirective } from '@spartan-ng/ui-badge-helm';
 import { HlmSkeletonComponent } from '@spartan-ng/ui-skeleton-helm';
+import { HlmSeparatorDirective } from '@spartan-ng/ui-separator-helm';
 import { HlmAvatarComponent, HlmAvatarFallbackDirective } from '@spartan-ng/ui-avatar-helm';
 import { HlmH1Directive, HlmH3Directive, HlmMutedDirective } from '@spartan-ng/ui-typography-helm';
 import { DatePipe } from '@angular/common';
 import { computed } from '@angular/core';
+import { TaskHistoryComponent } from '../../../tasks/components/task-history/task-history.component';
 
 @Component({
   selector: 'app-project-detail',
@@ -22,11 +24,13 @@ import { computed } from '@angular/core';
     HlmButtonDirective, 
     HlmBadgeDirective,
     HlmSkeletonComponent,
+    HlmSeparatorDirective,
     HlmAvatarComponent,
     HlmAvatarFallbackDirective,
     HlmH1Directive,
     HlmH3Directive,
-    HlmMutedDirective
+    HlmMutedDirective,
+    TaskHistoryComponent
   ],
   templateUrl: './project-detail.component.html',
   styleUrl: './project-detail.component.scss'
