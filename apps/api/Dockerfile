@@ -2,6 +2,9 @@
 FROM eclipse-temurin:21-jdk-alpine
 WORKDIR /app
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 # Copy all files (including source code and Maven wrapper)
 COPY . .
 
