@@ -51,6 +51,10 @@ jobs:
                   done
                   echo 'MySQL is ready!'
 
+            - name: Make Maven wrapper executable
+              working-directory: ./apps/api
+              run: chmod +x mvnw
+
             - name: Run API tests
               working-directory: ./apps/api
               run: ./mvnw clean test
@@ -106,7 +110,7 @@ jobs:
 
             - name: Run unit tests
               working-directory: ./apps/web
-              run: npm run test -- --watch=false --browsers=ChromeHeadless
+              run: npm run test
 
             - name: Build application
               working-directory: ./apps/web
@@ -138,29 +142,100 @@ jobs:
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
 
+            - name: Create environment file for integration tests
+              run: |
+                  # Create .env file with integration test values
+                  cat > .env << EOF
+                  NODE_ENV=test
+
+                  # Database Configuration
+                  MYSQL_DATABASE=mydatabase
+                  MYSQL_ROOT_PASSWORD=verysecret
+                  DB_USERNAME=root
+                  DB_PASSWORD=verysecret
+
+                  # Application Configuration
+                  DOCKER_COMPOSE_ENABLED=false
+
+                  # Email Configuration (Test values)
+                  MAIL_HOST=smtp.gmail.com
+                  MAIL_PORT=587
+                  MAIL_USERNAME=test@example.com
+                  MAIL_PASSWORD=test_password
+                  APP_MAIL_FROM=test@example.com
+                  APP_MAIL_NAME=Test Application
+
+                  # Node.js/Angular Configuration
+                  API_URL=http://api:8080/api
+                  CHOKIDAR_USEPOLLING=true
+                  WATCHPACK_POLLING=true
+                  NG_CLI_ANALYTICS=false
+                  EOF
+                  
+                  echo "Created .env file for integration tests"
+
             - name: Build and test with Docker Compose
               run: |
                   # Build all services
-                  docker-compose -f docker-compose.yaml build
+                  docker compose -f docker-compose.yaml build
 
                   # Start services
-                  docker-compose -f docker-compose.yaml up -d
+                  docker compose -f docker-compose.yaml up -d
 
-                  # Wait for services to be healthy
-                  echo "Waiting for services to be ready..."
-                  sleep 30
+                  # Show running containers for debugging
+                  echo "Running containers:"
+                  docker ps
 
-                  # Test API health
-                  curl --fail http://localhost:8080/actuator/health || exit 1
+                  # Wait for MySQL to be healthy
+                  echo "Waiting for MySQL to be healthy..."
+                  timeout 300 bash -c 'until docker compose -f docker-compose.yaml ps mysql | grep -q "healthy"; do echo "Waiting for MySQL..."; sleep 10; done'
 
-                  # Test Web app
-                  curl --fail http://localhost:4200 || exit 1
+                  # Wait for API to be healthy
+                  echo "Waiting for API to be healthy..."
+                  timeout 300 bash -c 'until docker compose -f docker-compose.yaml ps api | grep -q "healthy"; do echo "Waiting for API..."; sleep 10; done'
+
+                  # Additional direct connectivity test for API
+                  echo "Testing direct API connectivity..."
+                  timeout 120 bash -c 'until curl -s http://localhost:8080/actuator/health > /dev/null; do echo "Testing API connection..."; sleep 5; done'
+
+                  # Wait for Web service to respond
+                  echo "Waiting for Web service to respond..."
+                  timeout 120 bash -c 'until curl -s http://localhost:4200 > /dev/null; do echo "Waiting for Web..."; sleep 5; done'
+
+                  # Show service status for debugging
+                  echo "=== Service Status ==="
+                  docker compose -f docker-compose.yaml ps
+
+                  # Test API health endpoint
+                  echo "Testing API health endpoint..."
+                  curl --fail --max-time 10 -v http://localhost:8080/actuator/health || {
+                    echo "API health check failed. Debugging info:"
+                    echo "=== Port listening ==="
+                    netstat -tlnp | grep 8080 || echo "No process listening on port 8080"
+                    echo "=== API Container logs ==="
+                    docker compose -f docker-compose.yaml logs api --tail=100
+                    exit 1
+                  }
+
+                  # Test Web application
+                  echo "Testing Web application..."
+                  curl --fail --max-time 10 -v http://localhost:4200 || {
+                    echo "Web app check failed. Debugging info:"
+                    echo "=== Port listening ==="
+                    netstat -tlnp | grep 4200 || echo "No process listening on port 4200"
+                    echo "=== Web Container logs ==="
+                    docker compose -f docker-compose.yaml logs web --tail=50
+                    exit 1
+                  }
 
                   echo "Integration tests passed!"
 
             - name: Cleanup
               if: always()
-              run: docker-compose -f docker-compose.yaml down -v
+              run: |
+                  docker compose -f docker-compose.yaml down -v
+                  # Remove test environment file
+                  rm -f .env
 
     # Job 4: Security Scan
     security-scan:

@@ -2,9 +2,8 @@ version: "3.8"
 services:
     mysql:
         image: "mysql:8.0"
-        environment:
-            - MYSQL_DATABASE=mydatabase
-            - MYSQL_ROOT_PASSWORD=verysecret
+        env_file:
+            - .env
         healthcheck:
             test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
             interval: 10s
@@ -13,22 +12,27 @@ services:
         volumes:
             - db_data:/var/lib/mysql
         expose:
-          - "3306:3306"
+            - "3306:3306"
 
     api:
         build:
             context: ./apps/api
             dockerfile: Dockerfile.prod
             args:
-                - DB_URL=jdbc:mysql://mysql:3306/mydatabase
-                - DB_USERNAME=root
-                - DB_PASSWORD=verysecret
-                - DOCKER_COMPOSE_ENABLED=false
+                - DB_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
+                - DB_USERNAME=${DB_USERNAME}
+                - DB_PASSWORD=${DB_PASSWORD}
+                - DOCKER_COMPOSE_ENABLED=${DOCKER_COMPOSE_ENABLED}
+                - MAIL_HOST=${MAIL_HOST}
+                - MAIL_PORT=${MAIL_PORT}
+                - MAIL_USERNAME=${MAIL_USERNAME}
+                - MAIL_PASSWORD=${MAIL_PASSWORD}
+                - APP_MAIL_FROM=${APP_MAIL_FROM}
+                - APP_MAIL_NAME=${APP_MAIL_NAME}
+        env_file:
+            - .env
         environment:
-            - DB_URL=jdbc:mysql://mysql:3306/mydatabase
-            - DB_USERNAME=root
-            - DB_PASSWORD=verysecret
-            - DOCKER_COMPOSE_ENABLED=false
+            - DB_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
         depends_on:
             mysql:
                 condition: service_healthy
@@ -44,7 +48,7 @@ services:
         ports:
             - "4200:4000"
         env_file:
-            - ../../.env.prod
+            - .env
 
 volumes:
     db_data:

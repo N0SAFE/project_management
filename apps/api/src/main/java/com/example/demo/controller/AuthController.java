@@ -49,17 +49,27 @@ public class AuthController {
             return ResponseEntity.badRequest().body(error);
         }
         User savedUser = userService.registerUser(user);
-        return ResponseEntity.ok(savedUser);
+        logger.info("Saved user - ID: {}, Username: {}, Email: {}", savedUser.getId(), savedUser.getUsername(), savedUser.getEmail());
+        
+        // Create a clean response object without password
+        User responseUser = new User();
+        responseUser.setId(savedUser.getId());
+        responseUser.setUsername(savedUser.getUsername());
+        responseUser.setEmail(savedUser.getEmail());
+        // Don't set password - leave it null for security
+        
+        logger.info("Returning user - ID: {}, Username: {}, Email: {}", responseUser.getId(), responseUser.getUsername(), responseUser.getEmail());
+        return ResponseEntity.ok(responseUser);
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         logger.info("Login attempt for email: {}", loginRequest.getEmail());
-        
+
         try {
             // Log the attempt
             logger.debug("Creating authentication token for email: {}", loginRequest.getEmail());
-            
+
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmail(),
@@ -96,11 +106,13 @@ public class AuthController {
                     .sameSite("Lax")
                     .build();
 
-            // Return user data without tokens
+            // Return user data with tokens (also include in response body for testing)
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
                     .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                     .body(AuthenticationResponse.builder()
+                            .accessToken(jwtToken)
+                            .refreshToken(refreshToken.getToken())
                             .userId(user.getId())
                             .username(user.getUsername())
                             .email(user.getEmail())
@@ -119,7 +131,7 @@ public class AuthController {
         try {
             // Extract refresh token from cookie
             String refreshTokenFromCookie = extractRefreshTokenFromCookies(request);
-            
+
             if (refreshTokenFromCookie == null) {
                 Map<String, String> error = new HashMap<>();
                 error.put("error", "No refresh token found");
@@ -132,7 +144,7 @@ public class AuthController {
                     .map(user -> {
                         UserPrincipal userPrincipal = new UserPrincipal(user);
                         String newAccessToken = jwtService.generateToken(userPrincipal);
-                        
+
                         // Create new access token cookie
                         ResponseCookie jwtCookie = ResponseCookie.from("accessToken", newAccessToken)
                                 .httpOnly(true)
@@ -196,7 +208,7 @@ public class AuthController {
         try {
             // Get token from cookie
             String token = extractTokenFromCookies(request);
-            
+
             if (token == null) {
                 return ResponseEntity.status(401).body(Map.of("error", "No authentication token found"));
             }

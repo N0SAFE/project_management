@@ -70,4 +70,17 @@ export class ProjectService {
     }
     return result;
   };
+
+  updateProject = async (id: number, data: { name: string; description: string }): Promise<Project> => {
+    const result = await this.http.put<Project>(`${this.apiUrl}/${id}`, data).toPromise();
+    if (!result) {
+      throw new Error('Project update failed');
+    }
+    return result;
+  };
+  deleteProject = async (id: number, confirmationName: string): Promise<void> => {
+    await this.http.delete(`${this.apiUrl}/${id}`, { 
+      body: { confirmationName } 
+    }).toPromise();
+  };
 }

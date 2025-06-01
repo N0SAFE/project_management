@@ -24,15 +24,7 @@ import {
   HlmBreadcrumbSeparatorComponent,
   HlmBreadcrumbListDirective,
 } from '@spartan-ng/ui-breadcrumb-helm';
-import {
-  HlmProgressDirective,
-  HlmProgressIndicatorDirective,
-} from '@spartan-ng/ui-progress-helm';
 import { DatePipe } from '@angular/common';
-import {
-  BrnProgressComponent,
-  BrnProgressIndicatorComponent,
-} from '@spartan-ng/brain/progress';
 import { HlmSelectImports } from '@spartan-ng/ui-select-helm';
 import { BrnSelectImports } from '@spartan-ng/brain/select';
 
@@ -55,12 +47,8 @@ import { BrnSelectImports } from '@spartan-ng/brain/select';
     HlmBreadcrumbPageDirective,
     HlmBreadcrumbSeparatorComponent,
     HlmBreadcrumbListDirective,
-    HlmProgressDirective,
     FormsModule,
     DatePipe,
-    HlmProgressIndicatorDirective,
-    BrnProgressComponent,
-    BrnProgressIndicatorComponent,
     RouterLink,
     BrnSelectImports,
     HlmSelectImports,
@@ -83,15 +71,17 @@ export class TaskListComponent {
   // Query for project statuses
   statusesQuery = injectQuery(() => ({
     queryKey: ['project-statuses', this.projectId],
-    queryFn: () => this.projectSettingsService.getProjectStatuses(this.projectId),
-    enabled: !!this.projectId
+    queryFn: () =>
+      this.projectSettingsService.getProjectStatuses(this.projectId),
+    enabled: !!this.projectId,
   }));
 
   // Query for project priorities
   prioritiesQuery = injectQuery(() => ({
     queryKey: ['project-priorities', this.projectId],
-    queryFn: () => this.projectSettingsService.getProjectPriorities(this.projectId),
-    enabled: !!this.projectId
+    queryFn: () =>
+      this.projectSettingsService.getProjectPriorities(this.projectId),
+    enabled: !!this.projectId,
   }));
 
   // Filtering state - now using IDs instead of strings
@@ -117,21 +107,6 @@ export class TaskListComponent {
     this.router.navigate(['/projects', this.projectId, 'tasks', id]);
   }
 
-  getTaskProgress(status: any): number {
-    // Handle both legacy string format and new TaskStatus object format
-    const statusName = typeof status === 'object' && status?.name ? status.name.toUpperCase() : 
-                      typeof status === 'string' ? status.toUpperCase() : '';
-    
-    if (statusName.includes('TODO') || statusName.includes('FAIRE')) {
-      return 0;
-    } else if (statusName.includes('IN_PROGRESS') || statusName.includes('PROGRESS') || statusName.includes('COURS')) {
-      return 50;
-    } else if (statusName.includes('DONE') || statusName.includes('TERMINÉ') || statusName.includes('COMPLETE')) {
-      return 100;
-    }
-    return 0;
-  }
-
   // Helper methods for display
   getStatusLabel(status: any): string {
     if (status && typeof status === 'object' && status.name) {
@@ -139,10 +114,14 @@ export class TaskListComponent {
     }
     // Fallback for legacy data
     switch (status) {
-      case 'TODO': return 'À faire';
-      case 'IN_PROGRESS': return 'En cours';
-      case 'DONE': return 'Terminé';
-      default: return status || 'Non défini';
+      case 'TODO':
+        return 'À faire';
+      case 'IN_PROGRESS':
+        return 'In Progress';
+      case 'DONE':
+        return 'Terminé';
+      default:
+        return status || 'Non défini';
     }
   }
 
@@ -152,32 +131,63 @@ export class TaskListComponent {
     }
     // Fallback for legacy data
     switch (priority) {
-      case 'LOW': return 'Basse';
-      case 'MEDIUM': return 'Moyenne';
-      case 'HIGH': return 'Haute';
-      default: return priority || 'Non définie';
+      case 'LOW':
+        return 'Basse';
+      case 'MEDIUM':
+        return 'Moyenne';
+      case 'HIGH':
+        return 'Haute';
+      default:
+        return priority || 'Non définie';
     }
   }
 
-  getStatusVariant(status: any): 'default' | 'destructive' | 'outline' | 'secondary' {
-    const statusName = typeof status === 'object' && status?.name ? status.name.toUpperCase() : 
-                      typeof status === 'string' ? status.toUpperCase() : '';
-    
-    if (statusName.includes('DONE') || statusName.includes('TERMINÉ') || statusName.includes('COMPLETE')) {
+  getStatusVariant(
+    status: any
+  ): 'default' | 'destructive' | 'outline' | 'secondary' {
+    const statusName =
+      typeof status === 'object' && status?.name
+        ? status.name.toUpperCase()
+        : typeof status === 'string'
+        ? status.toUpperCase()
+        : '';
+
+    if (
+      statusName.includes('DONE') ||
+      statusName.includes('TERMINÉ') ||
+      statusName.includes('COMPLETE')
+    ) {
       return 'default';
-    } else if (statusName.includes('IN_PROGRESS') || statusName.includes('PROGRESS') || statusName.includes('COURS')) {
+    } else if (
+      statusName.includes('IN_PROGRESS') ||
+      statusName.includes('PROGRESS') ||
+      statusName.includes('COURS')
+    ) {
       return 'secondary';
     }
     return 'outline';
   }
 
-  getPriorityVariant(priority: any): 'default' | 'destructive' | 'outline' | 'secondary' {
-    const priorityName = typeof priority === 'object' && priority?.name ? priority.name.toUpperCase() : 
-                        typeof priority === 'string' ? priority.toUpperCase() : '';
-    
-    if (priorityName.includes('HIGH') || priorityName.includes('HAUTE') || priorityName.includes('ÉLEVÉ')) {
+  getPriorityVariant(
+    priority: any
+  ): 'default' | 'destructive' | 'outline' | 'secondary' {
+    const priorityName =
+      typeof priority === 'object' && priority?.name
+        ? priority.name.toUpperCase()
+        : typeof priority === 'string'
+        ? priority.toUpperCase()
+        : '';
+
+    if (
+      priorityName.includes('HIGH') ||
+      priorityName.includes('HAUTE') ||
+      priorityName.includes('ÉLEVÉ')
+    ) {
       return 'destructive';
-    } else if (priorityName.includes('MEDIUM') || priorityName.includes('MOYENNE')) {
+    } else if (
+      priorityName.includes('MEDIUM') ||
+      priorityName.includes('MOYENNE')
+    ) {
       return 'secondary';
     }
     return 'outline';

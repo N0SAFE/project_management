@@ -11,14 +11,9 @@ import { HlmH1Directive, HlmMutedDirective } from '@spartan-ng/ui-typography-hel
 import { HlmBreadcrumbDirective, HlmBreadcrumbItemDirective, HlmBreadcrumbLinkDirective, HlmBreadcrumbPageDirective, HlmBreadcrumbSeparatorComponent, HlmBreadcrumbListDirective } from '@spartan-ng/ui-breadcrumb-helm';
 import { HlmAvatarImports } from '@spartan-ng/ui-avatar-helm';
 import { HlmAlertDirective, HlmAlertDescriptionDirective, HlmAlertTitleDirective, HlmAlertIconDirective } from '@spartan-ng/ui-alert-helm';
-import { CdkDragDrop, CdkDrag, CdkDropList, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, CdkDrag, CdkDropList, moveItemInArray, transferArrayItem, CdkDropListGroup } from '@angular/cdk/drag-drop';
 import { CommonModule } from '@angular/common';
-
-interface KanbanColumn {
-  id: number;
-  status: TaskStatus;
-  tasks: Task[];
-}
+import { toast } from 'ngx-sonner';
 
 @Component({
   selector: 'app-task-kanban',
@@ -42,7 +37,8 @@ interface KanbanColumn {
     HlmAlertTitleDirective,
     HlmAlertIconDirective,
     CdkDrag,
-    CdkDropList
+    CdkDropList,
+    CdkDropListGroup
   ],
   templateUrl: './task-kanban.component.html',
   styleUrl: './task-kanban.component.scss'
@@ -71,15 +67,105 @@ export class TaskKanbanComponent {
     enabled: !!this.projectId
   }));
 
-  // Mutation for updating task status
+  // Mutation for updating task status with optimistic updates
   updateTaskStatusMutation = injectMutation(() => ({
     mutationFn: ({ taskId, statusId }: { taskId: number, statusId: number }) => 
-      this.taskService.updateTask(taskId, { statusId }),
-    onSuccess: () => {
+      this.taskService.updateTaskStatus(taskId, statusId),
+    onMutate: async ({ taskId, statusId }) => {
+      console.log('Mutation starting for task:', taskId, 'to status:', statusId);
+      
+      // Cancel any outgoing refetches so they don't overwrite our optimistic update
+      await this.queryClient.cancelQueries({ queryKey: ['tasks', this.projectId] });
+      
+      // Snapshot the previous value
+      const previousTasks = this.queryClient.getQueryData(['tasks', this.projectId]);
+      
+      // Get the target status object from the statuses query
+      const statuses = this.statusesQuery.data() || [];
+      const targetStatus = statuses.find(s => s.id === statusId);
+      
+      if (targetStatus) {
+        // Optimistically update to the new value with complete status object
+        this.queryClient.setQueryData(['tasks', this.projectId], (old: Task[] = []) => {
+          return old.map(task => 
+            task.id === taskId 
+              ? { ...task, status: targetStatus }
+              : task
+          );
+        });
+        console.log('Optimistic update applied for task:', taskId, 'with status:', targetStatus.name);
+      } else {
+        console.warn('Target status not found:', statusId);
+      }
+      
+      // Return a context object with the snapshotted value
+      return { previousTasks };
+    },
+    onError: (err, variables, context) => {
+      console.error('Mutation failed:', err);
+      // If the mutation fails, use the context to roll back
+      if (context?.previousTasks) {
+        this.queryClient.setQueryData(['tasks', this.projectId], context.previousTasks);
+      }
+      
+      // Get the status name for better error message
+      const statuses = this.statusesQuery.data() || [];
+      const targetStatus = statuses.find(s => s.id === variables.statusId);
+      const statusName = targetStatus?.name || `Status ID ${variables.statusId}`;
+      
+      this.errorMsg.set(err?.message || 'Error updating task status');
+      
+      // Show error toast with specific details
+      let errorMessage = 'Failed to update task status';
+      let errorDescription = '';
+      
+      console.log(err)
+      
+      // if (err?.status === 400) {
+      //   errorMessage = 'Invalid status update';
+      //   errorDescription = `Unable to move task to "${statusName}". Please check if this status is valid.`;
+      // } else if (err?.status === 403) {
+      //   errorMessage = 'Permission denied';
+      //   errorDescription = 'You do not have permission to update this task status.';
+      // } else if (err?.status === 404) {
+      //   errorMessage = 'Task or status not found';
+      //   errorDescription = 'The task or target status could not be found. Please refresh the page.';
+      // } else if (err?.status === 0) {
+      //   errorMessage = 'Connection error';
+      //   errorDescription = 'Unable to connect to the server. Please check your internet connection.';
+      // } else {
+      //   errorDescription = err?.message || `Failed to move task to "${statusName}". Please try again.`;
+      // }
+      
+      toast.error(errorMessage, {
+        description: errorDescription
+      });
+      
+      // Only invalidate on error to ensure we have fresh data
       this.queryClient.invalidateQueries({ queryKey: ['tasks', this.projectId] });
     },
-    onError: (err: any) => {
-      this.errorMsg.set(err?.message || 'Erreur lors de la mise à jour du statut');
+    onSuccess: (data, variables) => {
+      console.log('Mutation succeeded for task:', variables.taskId, 'data:', data);
+      
+      // Get the status name for success message
+      const statuses = this.statusesQuery.data() || [];
+      const targetStatus = statuses.find(s => s.id === variables.statusId);
+      const statusName = targetStatus?.name || 'new status';
+      const taskName = data?.name || 'Task';
+      
+      // Show success toast
+      toast.success('Task status updated', {
+        description: `"${taskName}" has been moved to "${statusName}".`
+      });
+      
+      // Update the cache with the actual server response
+      this.queryClient.setQueryData(['tasks', this.projectId], (old: Task[] = []) => {
+        return old.map(task => 
+          task.id === variables.taskId 
+            ? data // Use the server response which should have the updated status
+            : task
+        );
+      });
     },
   }));
 
@@ -99,38 +185,88 @@ export class TaskKanbanComponent {
 
   // Handle drag and drop
   onTaskDropped(event: CdkDragDrop<Task[]>, targetStatusId: number) {
+    console.log('Drag drop event:', {
+      previousIndex: event.previousIndex,
+      currentIndex: event.currentIndex,
+      targetStatusId,
+      sameContainer: event.previousContainer === event.container,
+      taskData: event.previousContainer.data[event.previousIndex]
+    });
+
     if (event.previousContainer === event.container) {
-      // Moving within the same column
+      // Moving within the same column - just reorder
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+      console.log('Moved within same column');
     } else {
       // Moving between columns
       const task = event.previousContainer.data[event.previousIndex];
-      transferArrayItem(
-        event.previousContainer.data,
-        event.container.data,
-        event.previousIndex,
-        event.currentIndex
-      );
+      const currentStatusId = task.status?.id;
       
-      // Update task status in the backend
-      this.updateTaskStatusMutation.mutate({
-        taskId: task.id,
-        statusId: targetStatusId
+      console.log('Moving task between columns:', {
+        taskName: task.name,
+        fromStatus: currentStatusId,
+        toStatus: targetStatusId,
+        taskId: task.id
       });
+      
+      // Only update if the status is actually different
+      if (currentStatusId !== targetStatusId) {
+        // Clear any previous error messages
+        this.errorMsg.set('');
+        
+        // DO NOT perform manual transferArrayItem here!
+        // The optimistic update in the mutation will handle the UI change
+        // This prevents the double-update that causes jumping
+        
+        // Update the task status in the backend - optimistic update will handle UI
+        this.updateTaskStatusMutation.mutate({
+          taskId: task.id,
+          statusId: targetStatusId
+        });
+      } else {
+        console.log('Task status is already the target status, no update needed');
+        // Still perform the UI transfer since user expects the card to move
+        transferArrayItem(
+          event.previousContainer.data,
+          event.container.data,
+          event.previousIndex,
+          event.currentIndex
+        );
+      }
     }
   }
 
   // Helper methods
   getPriorityColor(priority: any): string {
+    // Use CSS variables for consistent dark mode support
     if (priority && typeof priority === 'object' && priority.color) {
-      return `bg-${priority.color}-100 text-${priority.color}-800 border-${priority.color}-300`;
+      return `badge-${priority.color}`;
+    }
+    // Fallback for legacy data - use CSS variables
+    switch (priority) {
+      case 'HIGH': return 'badge-red';
+      case 'MEDIUM': return 'badge-yellow';
+      case 'LOW': return 'badge-green';
+      default: return 'badge-gray';
+    }
+  }
+
+  getPriorityVariant(priority: any): 'default' | 'destructive' | 'outline' | 'secondary' {
+    if (priority && typeof priority === 'object' && priority.name) {
+      const priorityName = priority.name.toUpperCase();
+      if (priorityName.includes('HIGH') || priorityName.includes('HAUTE') || priorityName.includes('ÉLEVÉ')) {
+        return 'destructive';
+      } else if (priorityName.includes('MEDIUM') || priorityName.includes('MOYENNE')) {
+        return 'secondary';
+      }
+      return 'outline';
     }
     // Fallback for legacy data
     switch (priority) {
-      case 'HIGH': return 'bg-red-100 text-red-800 border-red-300';
-      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'LOW': return 'bg-green-100 text-green-800 border-green-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+      case 'HIGH': return 'destructive';
+      case 'MEDIUM': return 'secondary';
+      case 'LOW': return 'outline';
+      default: return 'outline';
     }
   }
 

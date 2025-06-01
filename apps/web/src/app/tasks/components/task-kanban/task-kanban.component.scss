@@ -1,4 +1,53 @@
-/* Custom styles for Kanban board */
+/* Enhanced Kanban Board Styles with Dark Mode Support */
+
+/* Priority badge styles using standard CSS for dark mode */
+.badge-red {
+  background-color: rgb(254 226 226);
+  color: rgb(153 27 27);
+  border-color: rgb(252 165 165);
+}
+
+:is(.dark *) .badge-red {
+  background-color: rgb(127 29 29 / 0.2);
+  color: rgb(252 165 165);
+  border-color: rgb(153 27 27);
+}
+
+.badge-yellow {
+  background-color: rgb(254 249 195);
+  color: rgb(146 64 14);
+  border-color: rgb(253 224 71);
+}
+
+:is(.dark *) .badge-yellow {
+  background-color: rgb(133 77 14 / 0.2);
+  color: rgb(253 224 71);
+  border-color: rgb(146 64 14);
+}
+
+.badge-green {
+  background-color: rgb(220 252 231);
+  color: rgb(22 101 52);
+  border-color: rgb(134 239 172);
+}
+
+:is(.dark *) .badge-green {
+  background-color: rgb(20 83 45 / 0.2);
+  color: rgb(134 239 172);
+  border-color: rgb(22 101 52);
+}
+
+.badge-gray {
+  background-color: rgb(243 244 246);
+  color: rgb(31 41 55);
+  border-color: rgb(209 213 219);
+}
+
+:is(.dark *) .badge-gray {
+  background-color: rgb(31 41 55);
+  color: rgb(209 213 219);
+  border-color: rgb(75 85 99);
+}
 
 .line-clamp-2 {
   display: -webkit-box;
@@ -8,77 +57,244 @@
   overflow: hidden;
 }
 
-/* Smooth drag animations */
-.cdk-drag-animating {
-  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+/* Enhanced drag and drop animations */
+.cdk-drag {
+  transition: transform 150ms ease, opacity 150ms ease;
+  
+  &.cdk-drag-preview {
+    box-sizing: border-box;
+    border-radius: 8px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    transform: rotate(2deg);
+    border: 2px solid hsl(var(--primary));
+    background: hsl(var(--card));
+    z-index: 1000;
+    
+    /* Dark mode shadow */
+    :is(.dark *) & {
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    }
+  }
+  
+  &.cdk-drag-placeholder {
+    opacity: 0.3;
+    background: hsl(var(--muted));
+    border: 2px dashed hsl(var(--border));
+    border-radius: 8px;
+    transition: none; /* Disable transitions on placeholder to prevent jumping */
+  }
+  
+  &.cdk-drag-animating {
+    transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Disable transform transitions during drag to prevent jumping */
+  &.cdk-drag-dragging {
+    transition: none !important;
+  }
 }
 
 .cdk-drop-list {
-  transition: background-color 250ms cubic-bezier(0, 0, 0.2, 1);
+  transition: background-color 200ms ease, border-color 200ms ease, transform 200ms ease;
+  
+  &.cdk-drop-list-receiving {
+    background-color: hsl(var(--primary) / 0.1);
+    border-color: hsl(var(--primary) / 0.4);
+    transform: scale(1.01); /* Reduced scale to minimize jumping */
+  }
+  
+  &.cdk-drop-list-dragging {
+    background-color: hsl(var(--muted) / 0.6);
+  }
+  
+  /* Smoother transitions for drop list states */
+  &:not(.cdk-drop-list-receiving):not(.cdk-drop-list-dragging) {
+    transition: all 200ms ease-out;
+  }
 }
 
-.cdk-drop-list.cdk-drop-list-receiving {
-  background-color: rgba(59, 130, 246, 0.05);
-}
-
-.cdk-drag-preview {
-  box-sizing: border-box;
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-}
-
-.cdk-drag-placeholder {
-  opacity: 0.4;
-  background: #f3f4f6;
-  border: 2px dashed #d1d5db;
-  border-radius: 8px;
-}
-
-/* Custom scrollbar for horizontal scroll */
+/* Custom scrollbar with dark mode support */
 .overflow-x-auto::-webkit-scrollbar {
   height: 8px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: hsl(var(--muted) / 0.3);
   border-radius: 4px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: hsl(var(--muted-foreground) / 0.4);
   border-radius: 4px;
+  transition: background 0.2s ease;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: hsl(var(--muted-foreground) / 0.6);
 }
 
-/* Task card hover effects */
+/* Enhanced task card animations with real-time feedback */
 .task-card {
-  transition: all 0.2s ease;
+  transition: transform 200ms ease, box-shadow 200ms ease, opacity 150ms ease;
+  position: relative;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px hsl(var(--foreground) / 0.1);
+  }
+  
+  /* Dark mode hover effect */
+  :is(.dark *) &:hover {
+    box-shadow: 0 8px 25px hsl(var(--foreground) / 0.2);
+  }
+  
+  /* Updating state for real-time feedback */
+  &.updating {
+    opacity: 0.7;
+    transform: scale(0.98);
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: hsl(var(--primary) / 0.1);
+      border-radius: inherit;
+      pointer-events: none;
+    }
+  }
+  
+  /* Success state after update */
+  &.updated {
+    animation: pulseSuccess 0.6s ease-out;
+  }
+  
+  /* Error state */
+  &.error {
+    animation: pulseError 0.6s ease-out;
+  }
+  
+  /* Prevent jumping during drag operations */
+  &.cdk-drag {
+    transition: none !important;
+  }
 }
 
-.task-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* Column header animations */
+/* Column header enhancements */
 .kanban-column-header {
   transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsl(var(--foreground) / 0.1);
+  }
+  
+  .dark &:hover {
+    box-shadow: 0 4px 12px hsl(var(--foreground) / 0.15);
+  }
 }
 
-.kanban-column-header:hover {
-  transform: translateY(-1px);
+/* Improved drag handle visibility */
+.drag-handle {
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
-/* Responsive adjustments */
+.cdk-drag:hover .drag-handle {
+  opacity: 0.7;
+}
+
+/* Animation for new task appearance */
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Success pulse animation */
+@keyframes pulseSuccess {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+/* Error pulse animation */
+@keyframes pulseError {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.task-card {
+  animation: slideInFromTop 0.3s ease-out;
+}
+
+/* Enhanced responsive design */
 @media (max-width: 768px) {
   .kanban-board {
-    padding: 1rem;
+    padding: 0.5rem;
+    gap: 1rem;
   }
   
   .kanban-column {
     min-width: 280px;
+    flex-shrink: 0;
   }
+  
+  .task-card {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .kanban-column {
+    min-width: 260px;
+  }
+  
+  .overflow-x-auto {
+    padding-bottom: 1rem;
+  }
+}
+
+/* Loading state animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.loading-skeleton {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Focus states for accessibility */
+.cdk-drag:focus {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+.cdk-drop-list:focus-within {
+  background-color: hsl(var(--primary) / 0.05);
 }

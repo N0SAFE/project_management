@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { CommonModule, DatePipe } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { injectQuery, injectMutation, QueryClient } from '@tanstack/angular-query-experimental';
 
 // UI Components
@@ -26,13 +26,16 @@ import { TaskStatus, TaskPriority } from '../../../tasks/interfaces/task.model';
 import { BrnDialogContentDirective, BrnDialogTriggerDirective } from '@spartan-ng/brain/dialog';
 import { BrnSelectImports } from '@spartan-ng/brain/select';
 import { HlmSelectImports } from '@spartan-ng/ui-select-helm';
+import { toast } from 'ngx-sonner';
 
 @Component({
   selector: 'app-project-settings',
   standalone: true,
   imports: [
     CommonModule,
+    DatePipe,
     ReactiveFormsModule,
+    FormsModule,
     HlmCardDirective,
     HlmButtonDirective,
     HlmBadgeDirective,
@@ -90,8 +93,11 @@ export class ProjectSettingsComponent {
   activeTab = 'statuses';
   showStatusDialog = false;
   showPriorityDialog = false;
+  showProjectEditDialog = false;
+  showDeleteConfirmDialog = false;
   editingStatus: TaskStatus | null = null;
   editingPriority: TaskPriority | null = null;
+  projectNameConfirmation = '';
 
   // Forms
   statusForm: FormGroup = this.fb.group({
@@ -108,6 +114,11 @@ export class ProjectSettingsComponent {
     todoState: ['TODO', [Validators.required]],
     doingState: ['DOING', [Validators.required]],
     finishState: ['FINISH', [Validators.required]]
+  });
+
+  projectEditForm: FormGroup = this.fb.group({
+    name: ['', [Validators.required, Validators.maxLength(100)]],
+    description: ['', [Validators.maxLength(500)]]
   });
 
   // Queries
@@ -129,18 +140,78 @@ export class ProjectSettingsComponent {
   // Mutations
   createStatusMutation = injectMutation(() => ({
     mutationFn: (data: any) => this.projectSettingsService.createTaskStatus(this.id, data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       this.queryClient.invalidateQueries({ queryKey: ['project', this.id, 'settings'] });
       this.closeStatusDialog();
+      
+      toast.success('Status created successfully', {
+        description: `"${data.name}" has been added to your project statuses.`
+      });
+    },
+    onError: (error: any) => {
+      console.error('Failed to create status:', error);
+      
+      let errorMessage = 'Failed to create status';
+      let errorDescription = '';
+      
+      if (error?.status === 400) {
+        errorMessage = 'Invalid status data';
+        errorDescription = error?.error?.message || 'Please check your input and try again.';
+      } else if (error?.status === 403) {
+        errorMessage = 'Permission denied';
+        errorDescription = 'You do not have permission to create statuses in this project.';
+      } else if (error?.status === 409) {
+        errorMessage = 'Status already exists';
+        errorDescription = 'A status with this name already exists in the project.';
+      } else if (error?.status === 0) {
+        errorMessage = 'Connection error';
+        errorDescription = 'Unable to connect to the server. Please check your internet connection.';
+      } else {
+        errorDescription = error?.error?.message || 'An unexpected error occurred while creating the status.';
+      }
+      
+      toast.error(errorMessage, {
+        description: errorDescription
+      });
     }
   }));
 
   updateStatusMutation = injectMutation(() => ({
     mutationFn: ({ statusId, data }: { statusId: number, data: any }) => 
       this.projectSettingsService.updateTaskStatus(this.id, statusId, data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       this.queryClient.invalidateQueries({ queryKey: ['project', this.id, 'settings'] });
       this.closeStatusDialog();
+      
+      toast.success('Status updated successfully', {
+        description: `"${data.name}" has been updated.`
+      });
+    },
+    onError: (error: any) => {
+      console.error('Failed to update status:', error);
+      
+      let errorMessage = 'Failed to update status';
+      let errorDescription = '';
+      
+      if (error?.status === 400) {
+        errorMessage = 'Invalid status data';
+        errorDescription = error?.error?.message || 'Please check your input and try again.';
+      } else if (error?.status === 403) {
+        errorMessage = 'Permission denied';
+        errorDescription = 'You do not have permission to update statuses in this project.';
+      } else if (error?.status === 404) {
+        errorMessage = 'Status not found';
+        errorDescription = 'The status you are trying to update no longer exists.';
+      } else if (error?.status === 0) {
+        errorMessage = 'Connection error';
+        errorDescription = 'Unable to connect to the server. Please check your internet connection.';
+      } else {
+        errorDescription = error?.error?.message || 'An unexpected error occurred while updating the status.';
+      }
+      
+      toast.error(errorMessage, {
+        description: errorDescription
+      });
     }
   }));
 
@@ -148,30 +219,140 @@ export class ProjectSettingsComponent {
     mutationFn: (statusId: number) => this.projectSettingsService.deleteTaskStatus(this.id, statusId),
     onSuccess: () => {
       this.queryClient.invalidateQueries({ queryKey: ['project', this.id, 'settings'] });
+      
+      toast.success('Status deleted successfully', {
+        description: 'The status has been removed from your project.'
+      });
+    },
+    onError: (error: any) => {
+      console.error('Failed to delete status:', error);
+      
+      let errorMessage = 'Failed to delete status';
+      let errorDescription = '';
+      
+      if (error?.status === 400) {
+        errorMessage = 'Cannot delete status';
+        errorDescription = 'This status cannot be deleted because it is being used by existing tasks.';
+      } else if (error?.status === 403) {
+        errorMessage = 'Permission denied';
+        errorDescription = 'You do not have permission to delete statuses in this project.';
+      } else if (error?.status === 404) {
+        errorMessage = 'Status not found';
+        errorDescription = 'The status you are trying to delete no longer exists.';
+      } else if (error?.status === 0) {
+        errorMessage = 'Connection error';
+        errorDescription = 'Unable to connect to the server. Please check your internet connection.';
+      } else {
+        errorDescription = error?.error?.message || 'An unexpected error occurred while deleting the status.';
+      }
+      
+      toast.error(errorMessage, {
+        description: errorDescription
+      });
     }
   }));
 
   setDefaultStatusMutation = injectMutation(() => ({
     mutationFn: (statusId: number) => this.projectSettingsService.setDefaultTaskStatus(this.id, statusId),
-    onSuccess: () => {
+    onSuccess: (data) => {
       this.queryClient.invalidateQueries({ queryKey: ['project', this.id, 'settings'] });
+      
+      toast.success('Default status updated', {
+        description: `"${data?.name || 'Selected status'}" is now the default status for new tasks.`
+      });
+    },
+    onError: (error) => {
+      console.error('Failed to set default status:', error);
+      
+      let errorMessage = 'Failed to set default status';
+      let errorDescription = '';
+      
+      // if (error?.status === 403) {
+      //   errorMessage = 'Permission denied';
+      //   errorDescription = 'You do not have permission to change default settings in this project.';
+      // } else if (error?.status === 404) {
+      //   errorMessage = 'Status not found';
+      //   errorDescription = 'The status you selected no longer exists.';
+      // } else if (error?.status === 0) {
+      //   errorMessage = 'Connection error';
+      //   errorDescription = 'Unable to connect to the server. Please check your internet connection.';
+      // } else {
+      //   errorDescription = error?.error?.message || 'An unexpected error occurred while setting the default status.';
+      // }
+      
+      toast.error(errorMessage, {
+        description: errorDescription
+      });
     }
   }));
 
   createPriorityMutation = injectMutation(() => ({
     mutationFn: (data: any) => this.projectSettingsService.createTaskPriority(this.id, data),
-    onSuccess: () => {
+    onSuccess: (result: any) => {
       this.queryClient.invalidateQueries({ queryKey: ['project', this.id, 'settings'] });
       this.closePriorityDialog();
+      toast.success('Priority Created', {
+        description: `Priority "${result.name}" has been successfully created.`
+      });
+    },
+    onError: (error: any) => {
+      let errorMessage = 'Failed to create priority';
+      let errorDescription = 'An unexpected error occurred while creating the priority.';
+
+      if (error?.status === 400) {
+        errorMessage = 'Invalid Priority Data';
+        errorDescription = 'Please check the priority name and color values.';
+      } else if (error?.status === 403) {
+        errorMessage = 'Access Denied';
+        errorDescription = 'You do not have permission to create priorities in this project.';
+      } else if (error?.status === 409) {
+        errorMessage = 'Priority Already Exists';
+        errorDescription = 'A priority with this name already exists in the project.';
+      } else if (error?.status === 0) {
+        errorMessage = 'Connection Error';
+        errorDescription = 'Unable to connect to the server. Please check your internet connection.';
+      }
+
+      toast.error(errorMessage, {
+        description: errorDescription
+      });
     }
   }));
 
   updatePriorityMutation = injectMutation(() => ({
     mutationFn: ({ priorityId, data }: { priorityId: number, data: any }) => 
       this.projectSettingsService.updateTaskPriority(this.id, priorityId, data),
-    onSuccess: () => {
+    onSuccess: (result: any) => {
       this.queryClient.invalidateQueries({ queryKey: ['project', this.id, 'settings'] });
       this.closePriorityDialog();
+      toast.success('Priority Updated', {
+        description: `Priority "${result.name}" has been successfully updated.`
+      });
+    },
+    onError: (error: any) => {
+      let errorMessage = 'Failed to update priority';
+      let errorDescription = 'An unexpected error occurred while updating the priority.';
+
+      if (error?.status === 400) {
+        errorMessage = 'Invalid Priority Data';
+        errorDescription = 'Please check the priority name and color values.';
+      } else if (error?.status === 403) {
+        errorMessage = 'Access Denied';
+        errorDescription = 'You do not have permission to update priorities in this project.';
+      } else if (error?.status === 404) {
+        errorMessage = 'Priority Not Found';
+        errorDescription = 'The priority you are trying to update no longer exists.';
+      } else if (error?.status === 409) {
+        errorMessage = 'Priority Name Conflict';
+        errorDescription = 'Another priority with this name already exists in the project.';
+      } else if (error?.status === 0) {
+        errorMessage = 'Connection Error';
+        errorDescription = 'Unable to connect to the server. Please check your internet connection.';
+      }
+
+      toast.error(errorMessage, {
+        description: errorDescription
+      });
     }
   }));
 
@@ -179,6 +360,31 @@ export class ProjectSettingsComponent {
     mutationFn: (priorityId: number) => this.projectSettingsService.deleteTaskPriority(this.id, priorityId),
     onSuccess: () => {
       this.queryClient.invalidateQueries({ queryKey: ['project', this.id, 'settings'] });
+      toast.success('Priority Deleted', {
+        description: 'The priority has been successfully deleted from the project.'
+      });
+    },
+    onError: (error: any) => {
+      let errorMessage = 'Failed to delete priority';
+      let errorDescription = 'An unexpected error occurred while deleting the priority.';
+
+      if (error?.status === 400) {
+        errorMessage = 'Cannot Delete Priority';
+        errorDescription = 'This priority is currently in use and cannot be deleted.';
+      } else if (error?.status === 403) {
+        errorMessage = 'Access Denied';
+        errorDescription = 'You do not have permission to delete priorities in this project.';
+      } else if (error?.status === 404) {
+        errorMessage = 'Priority Not Found';
+        errorDescription = 'The priority you are trying to delete no longer exists.';
+      } else if (error?.status === 0) {
+        errorMessage = 'Connection Error';
+        errorDescription = 'Unable to connect to the server. Please check your internet connection.';
+      }
+
+      toast.error(errorMessage, {
+        description: errorDescription
+      });
     }
   }));
 
@@ -186,13 +392,111 @@ export class ProjectSettingsComponent {
     mutationFn: (priorityId: number) => this.projectSettingsService.setDefaultTaskPriority(this.id, priorityId),
     onSuccess: () => {
       this.queryClient.invalidateQueries({ queryKey: ['project', this.id, 'settings'] });
+      toast.success('Default Priority Set', {
+        description: 'The default task priority has been successfully updated.'
+      });
+    },
+    onError: (error: any) => {
+      let errorMessage = 'Failed to set default priority';
+      let errorDescription = 'An unexpected error occurred while setting the default priority.';
+
+      if (error?.status === 400) {
+        errorMessage = 'Invalid Priority';
+        errorDescription = 'The selected priority cannot be set as default.';
+      } else if (error?.status === 403) {
+        errorMessage = 'Access Denied';
+        errorDescription = 'You do not have permission to change default settings in this project.';
+      } else if (error?.status === 404) {
+        errorMessage = 'Priority Not Found';
+        errorDescription = 'The priority you are trying to set as default no longer exists.';
+      } else if (error?.status === 0) {
+        errorMessage = 'Connection Error';
+        errorDescription = 'Unable to connect to the server. Please check your internet connection.';
+      }
+
+      toast.error(errorMessage, {
+        description: errorDescription
+      });
+    }
+  }));
+
+  // Project management mutations
+  updateProjectMutation = injectMutation(() => ({
+    mutationFn: (data: { name: string; description: string }) => 
+      this.projectService.updateProject(this.id, data),
+    onSuccess: (updatedProject) => {
+      this.queryClient.invalidateQueries({ queryKey: ['project', this.id] });
+      this.closeProjectEditDialog();
+      toast.success('Project Updated', {
+        description: `Project "${updatedProject.name}" has been successfully updated.`
+      });
+    },
+    onError: (error: any) => {
+      let errorMessage = 'Failed to update project';
+      let errorDescription = 'An unexpected error occurred while updating the project.';
+
+      if (error?.status === 400) {
+        errorMessage = 'Invalid Project Data';
+        errorDescription = 'Please check the project name and description.';
+      } else if (error?.status === 403) {
+        errorMessage = 'Access Denied';
+        errorDescription = 'You do not have permission to update this project.';
+      } else if (error?.status === 404) {
+        errorMessage = 'Project Not Found';
+        errorDescription = 'The project you are trying to update no longer exists.';
+      } else if (error?.status === 0) {
+        errorMessage = 'Connection Error';
+        errorDescription = 'Unable to connect to the server. Please check your internet connection.';
+      }
+
+      toast.error(errorMessage, {
+        description: errorDescription
+      });
+    }
+  }));
+
+  deleteProjectMutation = injectMutation(() => ({
+    mutationFn: () => {
+      const project = this.projectQuery.data();
+      return this.projectService.deleteProject(this.id, this.projectNameConfirmation);
+    },
+    onSuccess: () => {
+      this.queryClient.invalidateQueries({ queryKey: ['projects'] });
+      this.closeDeleteConfirmDialog();
+      toast.success('Project Deleted', {
+        description: 'The project has been successfully deleted.'
+      });
+      // Navigate back to projects list after successful deletion
+      this.router.navigate(['/projects']);
+    },
+    onError: (error: any) => {
+      let errorMessage = 'Failed to delete project';
+      let errorDescription = 'An unexpected error occurred while deleting the project.';
+
+      if (error?.status === 400) {
+        errorMessage = 'Cannot Delete Project';
+        errorDescription = 'This project cannot be deleted because it has active tasks or members.';
+      } else if (error?.status === 403) {
+        errorMessage = 'Access Denied';
+        errorDescription = 'You do not have permission to delete this project.';
+      } else if (error?.status === 404) {
+        errorMessage = 'Project Not Found';
+        errorDescription = 'The project you are trying to delete no longer exists.';
+      } else if (error?.status === 0) {
+        errorMessage = 'Connection Error';
+        errorDescription = 'Unable to connect to the server. Please check your internet connection.';
+      }
+
+      toast.error(errorMessage, {
+        description: errorDescription
+      });
     }
   }));
 
   // Priority state options
   priorityStates = [
     { value: 'TODO', label: 'À faire', description: 'Tâches en attente' },
-    { value: 'DOING', label: 'En cours', description: 'Tâches en développement' },
+    { value: 'DOING', label: 'In Progress', description: 'Tasks in development' },
     { value: 'FINISH', label: 'Terminé', description: 'Tâches complétées' }
   ];
 
@@ -251,7 +555,7 @@ export class ProjectSettingsComponent {
 
   deleteStatus(status: TaskStatus): void {
     if (status.isDefault) {
-      alert('Impossible de supprimer le statut par défaut');
+      alert('Cannot delete default status');
       return;
     }
     
@@ -311,7 +615,7 @@ export class ProjectSettingsComponent {
 
   deletePriority(priority: TaskPriority): void {
     if (priority.isDefault) {
-      alert('Impossible de supprimer la priorité par défaut');
+      alert('Cannot delete default priority');
       return;
     }
     
@@ -322,6 +626,53 @@ export class ProjectSettingsComponent {
 
   setDefaultPriority(priority: TaskPriority): void {
     this.setDefaultPriorityMutation.mutate(priority.id);
+  }
+
+  // Project management methods
+  openEditProjectDialog(): void {
+    const project = this.projectQuery.data();
+    if (project) {
+      this.projectEditForm.patchValue({
+        name: project.name,
+        description: project.description
+      });
+    }
+    this.showProjectEditDialog = true;
+    console.log(this.showProjectEditDialog)
+  }
+
+  closeProjectEditDialog(): void {
+    this.showProjectEditDialog = false;
+    this.projectEditForm.reset();
+  }
+
+  submitProjectEdit(): void {
+    if (this.projectEditForm.valid) {
+      const data = this.projectEditForm.value;
+      this.updateProjectMutation.mutate(data);
+    }
+  }
+
+  openDeleteConfirmDialog(): void {
+    this.projectNameConfirmation = '';
+    this.showDeleteConfirmDialog = true;
+  }
+
+  closeDeleteConfirmDialog(): void {
+    this.showDeleteConfirmDialog = false;
+    this.projectNameConfirmation = '';
+  }
+
+  confirmDeleteProject(): void {
+    const project = this.projectQuery.data();
+    if (project && this.projectNameConfirmation === project.name) {
+      this.deleteProjectMutation.mutate();
+    }
+  }
+
+  get canDeleteProject(): boolean {
+    const project = this.projectQuery.data();
+    return project ? this.projectNameConfirmation === project.name : false;
   }
 
   // Navigate back to project

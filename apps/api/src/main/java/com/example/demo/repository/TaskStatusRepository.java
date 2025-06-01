@@ -4,9 +4,11 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.model.Project;
 import com.example.demo.model.TaskStatus;
@@ -28,4 +30,9 @@ public interface TaskStatusRepository extends JpaRepository<TaskStatus, Long> {
     
     @Query("SELECT COUNT(ts) FROM TaskStatus ts WHERE ts.project.id = :projectId")
     long countByProjectId(@Param("projectId") Long projectId);
+    
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM TaskStatus ts WHERE ts.project.id = :projectId")
+    void deleteByProjectId(@Param("projectId") Long projectId);
 }

@@ -1,0 +1,137 @@
+<div class="task-history space-y-4">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <h3 hlmH3 class="font-semibold">
+      <span *ngIf="showTaskHistory">Historique de la tâche</span>
+      <span *ngIf="showProjectActivity">Activité récente</span>
+    </h3>
+    <button 
+      hlmBtn
+      variant="outline"
+      size="sm"
+      (click)="loadHistory()" 
+      [disabled]="loading"
+      class="gap-2">
+      <svg *ngIf="!loading" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      <div *ngIf="loading" class="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+      {{ loading ? 'Actualisation...' : 'Actualiser' }}
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="flex items-center justify-center py-8">
+    <div class="flex items-center gap-2 text-muted-foreground">
+      <div class="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+      Chargement de l'historique...
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error" class="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+    <div class="flex items-center gap-2">
+      <svg class="h-4 w-4 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <span class="text-destructive font-medium">{{ error }}</span>
+    </div>
+  </div>
+
+  <!-- History Timeline -->
+  <div *ngIf="!loading && !error" class="space-y-4">
+    <!-- Empty State -->
+    <div *ngIf="history.length === 0" class="text-center py-8">
+      <div class="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4">
+        <svg class="h-6 w-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <p hlmMuted>Aucun historique disponible</p>
+    </div>
+
+    <!-- History Items -->
+    <div *ngFor="let item of history; trackBy: trackByHistoryId" 
+         class="relative pl-8 pb-6 border-l-2 border-border last:border-l-0">
+      
+      <!-- Timeline Icon -->
+      <div class="absolute -left-2 top-0 w-4 h-4 bg-background border-2 border-border rounded-full flex items-center justify-center">
+        <div class="w-2 h-2 rounded-full" [class]="getActionColor(item.action)"></div>
+      </div>
+
+      <!-- History Item Content -->
+      <div class="bg-card rounded-lg border border-border p-4 shadow-sm">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <!-- Action Summary -->
+            <div class="font-medium text-foreground mb-2">
+              {{ getChangeSummary(item) }}
+            </div>
+
+            <!-- Details -->
+            <div class="space-y-2 text-sm text-muted-foreground">
+              <div *ngIf="item.fieldName && item.fieldName !== 'task'" class="flex items-center gap-2">
+                <span class="font-medium">Champ:</span>
+                <span hlmBadge variant="outline">{{ formatFieldName(item.fieldName) }}</span>
+              </div>
+              
+              <div *ngIf="item.oldValue && item.newValue" class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">De:</span>
+                  <span hlmBadge variant="destructive">{{ item.oldValue }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">À:</span>
+                  <span hlmBadge variant="default">{{ item.newValue }}</span>
+                </div>
+              </div>
+              
+              <div *ngIf="item.newValue && !item.oldValue" class="flex items-center gap-2">
+                <span class="font-medium">Valeur:</span>
+                <span hlmBadge variant="secondary">{{ item.newValue }}</span>
+              </div>
+
+              <div *ngIf="item.comment" class="flex items-start gap-2">
+                <span class="font-medium">Note:</span>
+                <span class="italic">{{ item.comment }}</span>
+              </div>
+            </div>
+
+            <!-- Task Info (for project-wide view) -->
+            <div *ngIf="showProjectActivity && item.task" class="mt-3 pt-3 border-t border-border">
+              <div class="flex items-center gap-2 text-sm">
+                <span class="font-medium text-muted-foreground">Tâche:</span>
+                <span hlmBadge variant="outline" class="gap-1">
+                  <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                  </svg>
+                  #{{ item.task.id }} {{ item.task.name }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Timestamp and User -->
+          <div class="text-right text-sm text-muted-foreground ml-4 flex-shrink-0">
+            <div class="font-medium">{{ item.modifiedBy.username }}</div>
+            <div class="text-xs">{{ formatTimestamp(item.timestamp) }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Load More Button (if needed) -->
+    <div *ngIf="history.length >= maxItems && maxItems > 0" class="text-center pt-4">
+      <button 
+        hlmBtn
+        variant="outline"
+        (click)="loadMoreHistory()"
+        class="gap-2">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+        Voir plus d'historique
+      </button>
+    </div>
+  </div>
+</div>

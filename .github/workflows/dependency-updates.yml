@@ -28,6 +28,10 @@ jobs:
                   java-version: "21"
                   distribution: "temurin"
 
+            - name: Make Maven wrapper executable
+              working-directory: ./apps/api
+              run: chmod +x mvnw
+
             - name: Update npm dependencies
               working-directory: ./apps/web
               run: |
