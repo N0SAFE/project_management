@@ -56,7 +56,6 @@ public interface TaskHistoryRepository extends JpaRepository<TaskHistory, Long> 
      * Delete all history entries for a specific task
      */
     @Modifying
-    @Transactional
     @Query("DELETE FROM TaskHistory th WHERE th.task.id = :taskId")
     void deleteByTaskId(@Param("taskId") Long taskId);
     
