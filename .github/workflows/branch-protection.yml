@@ -87,8 +87,24 @@ jobs:
                     echo "Checking commit: $message"
                     
                     # Check if commit message follows conventional commits format
-                    # Pattern: type(scope): description or type: description
-                    if [[ "$message" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\([^)]+\))?:\ .+ ]]; then
+                    # Use case statement for more reliable pattern matching
+                    valid_format=false
+                    
+                    # Check for patterns like "type: description" or "type(scope): description"
+                    case "$message" in
+                      feat:\ *|feat\(*\):\ *) valid_format=true ;;
+                      fix:\ *|fix\(*\):\ *) valid_format=true ;;
+                      docs:\ *|docs\(*\):\ *) valid_format=true ;;
+                      style:\ *|style\(*\):\ *) valid_format=true ;;
+                      refactor:\ *|refactor\(*\):\ *) valid_format=true ;;
+                      test:\ *|test\(*\):\ *) valid_format=true ;;
+                      chore:\ *|chore\(*\):\ *) valid_format=true ;;
+                      perf:\ *|perf\(*\):\ *) valid_format=true ;;
+                      ci:\ *|ci\(*\):\ *) valid_format=true ;;
+                      build:\ *|build\(*\):\ *) valid_format=true ;;
+                    esac
+                    
+                    if [ "$valid_format" = true ]; then
                       echo "✅ Commit message format is valid: $message"
                     else
                       echo "⚠️  Commit message doesn't follow conventional format: $message"
