@@ -51,6 +51,10 @@ jobs:
                   done
                   echo 'MySQL is ready!'
 
+            - name: Make Maven wrapper executable
+              working-directory: ./apps/api
+              run: chmod +x mvnw
+
             - name: Run API tests
               working-directory: ./apps/api
               run: ./mvnw clean test
@@ -106,7 +110,7 @@ jobs:
 
             - name: Run unit tests
               working-directory: ./apps/web
-              run: npm run test -- --watch=false --browsers=ChromeHeadless
+              run: npm run test
 
             - name: Build application
               working-directory: ./apps/web
