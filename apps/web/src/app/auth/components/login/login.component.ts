@@ -84,7 +84,7 @@ export class LoginComponent implements OnInit {
           
           // Redirect to the original URL if provided, otherwise to home
           const destination = this.redirectTo || '/';
-          this.router.navigate([destination]);
+          window.location.href = destination;
         }, 100);
       },
       error: (error) => {

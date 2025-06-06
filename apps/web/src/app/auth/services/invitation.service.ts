@@ -33,18 +33,32 @@ export class InvitationService {
 
   async getInvitationDetails(token: string): Promise<InvitationDetails> {
     try {
-      return await firstValueFrom(
-        this.http.get<InvitationDetails>(`${this.baseUrl}/api/invitations/details/${token}`)
+      console.log('Making API call to get invitation details for token:', token);
+      console.log('API URL:', `${this.baseUrl}/invitations/details/${token}`);
+      
+      const response = await firstValueFrom(
+        this.http.get<InvitationDetails>(`${this.baseUrl}/invitations/details/${token}`)
       );
+      
+      console.log('API response received:', response);
+      return response;
     } catch (error: any) {
-      throw new Error(error.error?.message || 'Invitation non trouvée ou expirée');
+      console.error('API call failed:', error);
+      
+      if (error.error?.error) {
+        throw new Error(error.error.error);
+      } else if (error.error?.message) {
+        throw new Error(error.error.message);
+      } else {
+        throw error;
+      }
     }
   }
 
   async acceptInvitation(token: string): Promise<InvitationAcceptResponse> {
     try {
       return await firstValueFrom(
-        this.http.post<InvitationAcceptResponse>(`${this.baseUrl}/api/invitations/accept/${token}`, {})
+        this.http.post<InvitationAcceptResponse>(`${this.baseUrl}/invitations/accept/${token}`, {})
       );
     } catch (error: any) {
       throw new Error(error.error?.message || 'Error accepting invitation');

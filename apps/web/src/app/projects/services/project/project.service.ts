@@ -16,8 +16,17 @@ export interface ProjectMember {
   role: 'ADMIN' | 'MEMBER' | 'OBSERVER';
 }
 
-@Injectable({ providedIn: 'root' })
+export interface ProjectInvitation {
+  id: number;
+  email: string;
+  role: string;
+  status: string;
+  inviterName: string;
+  createdAt: string;
+  expiresAt: string;
+}
 
+@Injectable({ providedIn: 'root' })
 export class ProjectService {
   private apiUrl = `${environment.apiUrl}/projects`;
   private http = inject(HttpClient);
@@ -32,7 +41,9 @@ export class ProjectService {
   };
 
   fetchProject = async (id: number): Promise<Project> => {
-    const result = await this.http.get<Project>(`${this.apiUrl}/${id}`).toPromise();
+    const result = await this.http
+      .get<Project>(`${this.apiUrl}/${id}`)
+      .toPromise();
     if (!result) {
       throw new Error('Project not found');
     }
@@ -40,14 +51,32 @@ export class ProjectService {
   };
 
   fetchProjectMembers = async (id: number): Promise<ProjectMember[]> => {
-    const result = await this.http.get<ProjectMember[]>(`${this.apiUrl}/${id}/members`).toPromise();
+    const result = await this.http
+      .get<ProjectMember[]>(`${this.apiUrl}/${id}/members`)
+      .toPromise();
     if (!result) {
       throw new Error('No members found');
     }
     return result;
   };
 
-  createProject = async (data: { name: string; description: string; startDate: string }): Promise<Project> => {
+  fetchProjectInvitations = async (
+    id: number
+  ): Promise<ProjectInvitation[]> => {
+    const result = await this.http
+      .get<ProjectInvitation[]>(`${this.apiUrl}/${id}/invitations`)
+      .toPromise();
+    if (!result) {
+      throw new Error('No invitations found');
+    }
+    return result;
+  };
+
+  createProject = async (data: {
+    name: string;
+    description: string;
+    startDate: string;
+  }): Promise<Project> => {
     const result = await this.http.post<Project>(this.apiUrl, data).toPromise();
     if (!result) {
       throw new Error('Project creation failed');
@@ -55,32 +84,77 @@ export class ProjectService {
     return result;
   };
 
-  inviteMember = async (id: number, email: string, role: string): Promise<ProjectMember> => {
-    const result = await this.http.post<ProjectMember>(`${this.apiUrl}/${id}/invite`, { email, role }).toPromise();
+  inviteMember = async (
+    id: number,
+    email: string,
+    role: string
+  ): Promise<ProjectMember> => {
+    const result = await this.http
+      .post<ProjectMember>(`${this.apiUrl}/${id}/invite`, { email, role })
+      .toPromise();
     if (!result) {
       throw new Error('Invitation failed');
     }
     return result;
   };
 
-  changeMemberRole = async (id: number, userId: number, role: string): Promise<ProjectMember> => {
-    const result = await this.http.post<ProjectMember>(`${this.apiUrl}/${id}/members/${userId}/role`, { role }).toPromise();
+  changeMemberRole = async (
+    id: number,
+    userId: number,
+    role: string
+  ): Promise<ProjectMember> => {
+    const result = await this.http
+      .post<ProjectMember>(`${this.apiUrl}/${id}/members/${userId}/role`, {
+        role,
+      })
+      .toPromise();
     if (!result) {
       throw new Error('Role change failed');
     }
     return result;
   };
 
-  updateProject = async (id: number, data: { name: string; description: string }): Promise<Project> => {
-    const result = await this.http.put<Project>(`${this.apiUrl}/${id}`, data).toPromise();
+  updateProject = async (
+    id: number,
+    data: { name: string; description: string }
+  ): Promise<Project> => {
+    const result = await this.http
+      .put<Project>(`${this.apiUrl}/${id}`, data)
+      .toPromise();
     if (!result) {
       throw new Error('Project update failed');
     }
     return result;
   };
-  deleteProject = async (id: number, confirmationName: string): Promise<void> => {
-    await this.http.delete(`${this.apiUrl}/${id}`, { 
-      body: { confirmationName } 
-    }).toPromise();
+
+  updateProjectMember = async (
+    id: number,
+    userId: number,
+    data: { role: string }
+  ): Promise<ProjectMember> => {
+    const result = await this.http
+      .put<ProjectMember>(`${this.apiUrl}/${id}/members/${userId}`, data)
+      .toPromise();
+    if (!result) {
+      throw new Error('Member update failed');
+    }
+    return result;
+  };
+
+  deleteProject = async (
+    id: number,
+    confirmationName: string
+  ): Promise<void> => {
+    await this.http
+      .delete(`${this.apiUrl}/${id}`, {
+        body: { confirmationName },
+      })
+      .toPromise();
+  };
+
+  deleteProjectMember = async (id: number, userId: number): Promise<void> => {
+    await this.http
+      .delete(`${this.apiUrl}/${id}/members/${userId}`)
+      .toPromise();
   };
 }

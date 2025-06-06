@@ -1,29 +1,48 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ProjectService, ProjectMember } from '../../services/project/project.service';
+import {
+  ProjectService,
+  ProjectMember,
+  ProjectInvitation,
+} from '../../services/project/project.service';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
-import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-query-experimental';
+import {
+  injectMutation,
+  injectQuery,
+  QueryClient,
+} from '@tanstack/angular-query-experimental';
 import { HlmCardDirective } from '@spartan-ng/ui-card-helm';
 import { HlmButtonDirective } from '@spartan-ng/ui-button-helm';
 import { HlmInputDirective } from '@spartan-ng/ui-input-helm';
 import { HlmBadgeDirective } from '@spartan-ng/ui-badge-helm';
 import { HlmSkeletonComponent } from '@spartan-ng/ui-skeleton-helm';
-import { HlmAvatarComponent, HlmAvatarFallbackDirective } from '@spartan-ng/ui-avatar-helm';
-import { HlmH1Directive, HlmH3Directive, HlmMutedDirective } from '@spartan-ng/ui-typography-helm';
+import {
+  HlmAvatarComponent,
+  HlmAvatarFallbackDirective,
+} from '@spartan-ng/ui-avatar-helm';
+import {
+  HlmH1Directive,
+  HlmH3Directive,
+  HlmMutedDirective,
+} from '@spartan-ng/ui-typography-helm';
 import { FormFieldComponent } from '../../../shared/form-field/form-field.component';
 import { HlmSelectImports } from '@spartan-ng/ui-select-helm';
 import { BrnSelectImports } from '@spartan-ng/brain/select';
 import { HttpErrorResponse } from '@angular/common/http';
 import { toast } from 'ngx-sonner';
+import { HlmMenuBarModule } from '../../../../libs/ui/ui-menu-helm/src/index';
+import { HlmMenuModule } from '../../../../libs/ui/ui-menu-helm/src/index';
+import { HlmMenuComponent } from '../../../../libs/ui/ui-menu-helm/src/lib/hlm-menu.component';
+import { BrnMenuTriggerDirective } from '@spartan-ng/brain/menu';
+import { AuthService } from 'src/app/auth/services/auth.service';
 
 @Component({
-  selector: 'app-project-members',
-  standalone: true,  imports: [
-    ReactiveFormsModule, 
+  imports: [
+    ReactiveFormsModule,
     RouterLink,
-    HlmCardDirective, 
-    HlmButtonDirective, 
-    HlmInputDirective, 
+    HlmCardDirective,
+    HlmButtonDirective,
+    HlmInputDirective,
     HlmBadgeDirective,
     HlmSkeletonComponent,
     HlmAvatarComponent,
@@ -34,21 +53,30 @@ import { toast } from 'ngx-sonner';
     FormFieldComponent,
     HlmSelectImports,
     BrnSelectImports,
+    HlmMenuBarModule,
+    BrnMenuTriggerDirective,
   ],
   templateUrl: './project-members.component.html',
-  styleUrl: './project-members.component.scss'
+  styleUrl: './project-members.component.scss',
 })
 export class ProjectMembersComponent {
   private route = inject(ActivatedRoute);
   private projectService = inject(ProjectService);
   private fb = inject(FormBuilder);
-  private queryClient = inject(QueryClient)
+  private queryClient = inject(QueryClient);
+  private auth = inject(AuthService);
   id = Number(this.route.snapshot.paramMap.get('id'));
 
   membersQuery = injectQuery(() => ({
     queryKey: ['project', this.id, 'members'],
     queryFn: () => this.projectService.fetchProjectMembers(this.id),
   }));
+
+  invitationsQuery = injectQuery(() => ({
+    queryKey: ['project', this.id, 'invitations'],
+    queryFn: () => this.projectService.fetchProjectInvitations(this.id),
+  }));
+
   inviteForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
     role: ['MEMBER', Validators.required],
@@ -57,20 +85,27 @@ export class ProjectMembersComponent {
     mutationFn: (data: { email: string; role: string }) =>
       this.projectService.inviteMember(this.id, data.email, data.role),
     onSuccess: () => {
-      this.queryClient.invalidateQueries({ queryKey: ['project', this.id, 'members'] });
+      this.queryClient.invalidateQueries({
+        queryKey: ['project', this.id, 'members'],
+      });
+      this.queryClient.invalidateQueries({
+        queryKey: ['project', this.id, 'invitations'],
+      });
       toast.success('Invitation sent successfully', {
-        description: `The invitation has been sent to the specified email address.`
+        description: `The invitation has been sent to the specified email address.`,
       });
       this.inviteForm.reset({ role: 'MEMBER' });
     },
     onError: (err: any) => {
-      let errorMessage = 'An unexpected error occurred while sending the invitation.';
+      let errorMessage =
+        'An unexpected error occurred while sending the invitation.';
       let errorTitle = 'Error sending invitation';
-      
+
       if (err instanceof HttpErrorResponse) {
         switch (err.status) {
           case 400:
-            errorMessage = 'Invalid email address or member role. Please check your input.';
+            errorMessage =
+              'Invalid email address or member role. Please check your input.';
             errorTitle = 'Invalid invitation data';
             break;
           case 401:
@@ -78,11 +113,13 @@ export class ProjectMembersComponent {
             errorTitle = 'Authentication required';
             break;
           case 403:
-            errorMessage = 'You do not have permission to invite members to this project.';
+            errorMessage =
+              'You do not have permission to invite members to this project.';
             errorTitle = 'Permission denied';
             break;
           case 404:
-            errorMessage = 'Project not found. Please verify the project exists.';
+            errorMessage =
+              'Project not found. Please verify the project exists.';
             errorTitle = 'Project not found';
             break;
           case 409:
@@ -90,11 +127,13 @@ export class ProjectMembersComponent {
             errorTitle = 'Member already exists';
             break;
           case 422:
-            errorMessage = 'The provided data is invalid. Please check the email format and role.';
+            errorMessage =
+              'The provided data is invalid. Please check the email format and role.';
             errorTitle = 'Validation error';
             break;
           case 0:
-            errorMessage = 'Unable to connect to the server. Please check your internet connection.';
+            errorMessage =
+              'Unable to connect to the server. Please check your internet connection.';
             errorTitle = 'Connection error';
             break;
           default:
@@ -103,9 +142,35 @@ export class ProjectMembersComponent {
       } else {
         errorMessage = err?.message || errorMessage;
       }
-      
+
       toast.error(errorTitle, {
-        description: errorMessage
+        description: errorMessage,
+      });
+    },
+  }));
+
+  projectMemberUpdateMutation = injectMutation(() => ({
+    mutationFn: ({ memberId, role }: { memberId: number; role: string }) =>
+      this.projectService.updateProjectMember(this.id, memberId, { role }),
+    onSuccess: () => {
+      this.queryClient.invalidateQueries({
+        queryKey: ['project', this.id, 'members'],
+      });
+      toast.success('Member updated successfully', {
+        description: 'The member role has been updated.',
+      });
+    },
+  }));
+
+  projectMemberDeleteMutation = injectMutation(() => ({
+    mutationFn: ({ memberId }: { memberId: number }) =>
+      this.projectService.deleteProjectMember(this.id, memberId),
+    onSuccess: () => {
+      this.queryClient.invalidateQueries({
+        queryKey: ['project', this.id, 'members'],
+      });
+      toast.success('Member removed successfully', {
+        description: 'The member has been removed from the project.',
       });
     },
   }));
@@ -113,11 +178,23 @@ export class ProjectMembersComponent {
   invite() {
     if (this.inviteForm.invalid) {
       toast.error('Invalid form data', {
-        description: 'Please check the email address and role selection.'
+        description: 'Please check the email address and role selection.',
       });
       return;
     }
     const { email, role } = this.inviteForm.value;
     this.inviteMutation.mutate({ email: email!, role: role! });
+  }
+
+  formatExpirationDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('fr-FR');
+  }
+
+  isCurrentUser(member: ProjectMember): boolean {
+    const currentUser = this.auth.user();
+    if (!currentUser) {
+      return false;
+    }
+    return member.id === currentUser.id;
   }
 }

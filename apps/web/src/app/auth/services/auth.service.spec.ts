@@ -115,15 +115,29 @@ describe('AuthService', () => {
     });
   });
 
-  describe('register', () => {
-    it('should register successfully', () => {
+  describe('register', () => {    it('should register successfully', () => {
       const registerRequest = {
         username: 'testuser',
         email: 'test@example.com',
         password: 'password123'
       };
+      const authResponse = {
+        userId: 1,
+        username: 'testuser',
+        email: 'test@example.com',
+        tokenType: 'Bearer'
+      };
 
-      service.register(registerRequest).subscribe();
+      service.register(registerRequest).subscribe(response => {
+        expect(response).toEqual(authResponse);
+        expect(service.user()).toEqual({
+          id: 1,
+          username: 'testuser',
+          email: 'test@example.com'
+        });
+        expect(service.isAuthenticated()).toBeTrue();
+        expect(service.loading()).toBeFalse();
+      });
 
       expect(service.loading()).toBeTrue();
 
@@ -131,12 +145,10 @@ describe('AuthService', () => {
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(registerRequest);
       expect(req.request.withCredentials).toBeTrue();
-      req.flush({});
+      req.flush(authResponse);
 
       expect(service.loading()).toBeFalse();
-    });
-
-    it('should handle registration error', () => {
+    });    it('should handle registration error', () => {
       const registerRequest = {
         username: 'testuser',
         email: 'test@example.com',
@@ -147,6 +159,8 @@ describe('AuthService', () => {
       service.register(registerRequest).subscribe({
         next: () => fail('Should have failed'),
         error: () => {
+          expect(service.user()).toBeNull();
+          expect(service.isAuthenticated()).toBeFalse();
           expect(service.loading()).toBeFalse();
           expect(service.error()).toBe('Email already exists');
         }

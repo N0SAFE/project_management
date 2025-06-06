@@ -8,12 +8,6 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   {
-    path: 'invitation/:token',
-    loadComponent: () =>
-      import('./auth/components/invitation-accept/invitation-accept.component')
-        .then((m) => m.InvitationAcceptComponent),
-  },
-  {
     path: 'invitations/accept/:token',
     loadComponent: () =>
       import('./auth/components/invitation-accept/invitation-accept.component')

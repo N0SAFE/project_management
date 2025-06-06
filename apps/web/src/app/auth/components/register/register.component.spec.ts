@@ -192,19 +192,29 @@ describe('RegisterComponent', () => {
         email: 'test@example.com',
         password: 'password123'
       });
-    });
-
-    it('should handle successful registration', fakeAsync(() => {
+    });    it('should handle successful registration', fakeAsync(() => {
       const mockUser = TestDataFactory.createUser();
-      mockAuthService.register.and.returnValue(of(mockUser));
+      const mockResponse = {
+        userId: mockUser.id,
+        username: mockUser.username,
+        email: mockUser.email,
+        tokenType: 'Bearer'
+      };
+      mockAuthService.register.and.returnValue(of(mockResponse));
       
       component.submit();
       tick();
       
-      expect(router.navigate).toHaveBeenCalledWith(['/login']);
+      expect(router.navigate).toHaveBeenCalledWith(['/']);
     }));    it('should redirect to login with redirectTo parameter when present', fakeAsync(() => {
       const mockUser = TestDataFactory.createUser();
-      mockAuthService.register.and.returnValue(of(mockUser));
+      const mockResponse = {
+        userId: mockUser.id,
+        username: mockUser.username,
+        email: mockUser.email,
+        tokenType: 'Bearer'
+      };
+      mockAuthService.register.and.returnValue(of(mockResponse));
       
       // Set redirectTo parameter by updating the spy
       (activatedRoute.snapshot.queryParamMap.get as jasmine.Spy).and.callFake((key: string) => {
@@ -218,9 +228,7 @@ describe('RegisterComponent', () => {
       component.submit();
       tick();
       
-      expect(router.navigate).toHaveBeenCalledWith(['/login'], { 
-        queryParams: { redirectTo: '/projects' }
-      });
+      expect(router.navigate).toHaveBeenCalledWith(['/projects']);
     }));it('should handle registration error with status 400', fakeAsync(() => {
       const error = { status: 400, error: { message: 'Invalid email format' } };
       mockAuthService.register.and.returnValue(throwError(() => error));
