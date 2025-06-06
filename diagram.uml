@@ -1,0 +1,126 @@
+@startuml
+!theme plain
+
+' Entités principales
+entity "users" as users {
+  * id : BIGINT <<PK>>
+  --
+  * username : VARCHAR(50)
+  * email : VARCHAR(255) <<unique>>
+  * password : VARCHAR(255)
+}
+
+entity "project" as project {
+  * id : BIGINT <<PK>>
+  --
+  * name : VARCHAR(255) <<unique>>
+  description : TEXT
+  start_date : DATE
+}
+
+entity "project_member" as project_member {
+  * id : BIGINT <<PK>>
+  --
+  * project_id : BIGINT <<FK>>
+  * user_id : BIGINT <<FK>>
+  * role : VARCHAR(20)
+}
+
+entity "task" as task {
+  * id : BIGINT <<PK>>
+  --
+  * name : VARCHAR(255)
+  description : TEXT
+  due_date : DATE
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+  * project_id : BIGINT <<FK>>
+  assignee_id : BIGINT <<FK>>
+  priority_id : BIGINT <<FK>>
+  status_id : BIGINT <<FK>>
+}
+
+entity "task_status" as task_status {
+  * id : BIGINT <<PK>>
+  --
+  * name : VARCHAR(50)
+  description : VARCHAR(255)
+  * color : VARCHAR(7)
+  * order_index : INT
+  * is_default : BOOLEAN
+  * project_id : BIGINT <<FK>>
+}
+
+entity "task_priority" as task_priority {
+  * id : BIGINT <<PK>>
+  --
+  * name : VARCHAR(50)
+  description : VARCHAR(255)
+  * color : VARCHAR(7)
+  * level : INT
+  * is_default : BOOLEAN
+  * todo_state : VARCHAR(20)
+  * doing_state : VARCHAR(20)
+  * finish_state : VARCHAR(20)
+  * project_id : BIGINT <<FK>>
+}
+
+entity "refresh_token" as refresh_token {
+  * id : BIGINT <<PK>>
+  --
+  * token : VARCHAR(255) <<unique>>
+  * expiry_date : TIMESTAMP
+  * user_id : BIGINT <<FK>>
+}
+
+entity "task_history" as task_history {
+  * id : BIGINT <<PK>>
+  --
+  * task_id : BIGINT <<FK>>
+  * modified_by : BIGINT <<FK>>
+  * action : VARCHAR(20)
+  * field_name : VARCHAR(100)
+  old_value : TEXT
+  new_value : TEXT
+  comment : TEXT
+  * timestamp : TIMESTAMP
+}
+
+entity "project_invitations" as project_invitations {
+  * id : BIGINT <<PK>>
+  --
+  * project_id : BIGINT <<FK>>
+  * inviter_id : BIGINT <<FK>>
+  * email : VARCHAR(255)
+  * role : VARCHAR(20)
+  * token : VARCHAR(255) <<unique>>
+  * status : VARCHAR(20)
+  * created_at : TIMESTAMP
+  * expires_at : TIMESTAMP
+  accepted_at : TIMESTAMP
+  accepted_by_user_id : BIGINT <<FK>>
+}
+
+' Relations
+users ||--o{ project_member : "participe"
+project ||--o{ project_member : "contient"
+
+project ||--o{ task : "contient"
+users ||--o{ task : "assigné à"
+
+project ||--o{ task_status : "définit"
+project ||--o{ task_priority : "définit"
+
+task_status ||--o{ task : "a un statut"
+task_priority ||--o{ task : "a une priorité"
+
+users ||--o{ refresh_token : "possède"
+
+task ||--o{ task_history : "historique"
+users ||--o{ task_history : "modifié par"
+
+project ||--o{ project_invitations : "invitations"
+users ||--o{ project_invitations : "invité par"
+users ||--o{ project_invitations : "accepté par"
+
+@enduml
