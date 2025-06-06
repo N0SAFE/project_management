@@ -19,6 +19,7 @@ import {
   HlmMutedDirective,
 } from '@spartan-ng/ui-typography-helm';
 import { toast } from 'ngx-sonner';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-register',
@@ -96,9 +97,7 @@ export class RegisterComponent implements OnInit {
         toast.success('Account created successfully', {
           description:
             'Welcome! Your account has been created and you are now logged in.',
-        });
-
-        // Wait a bit for the state to update, then navigate
+        });        // Wait a bit for the state to update, then navigate
         setTimeout(() => {
           console.log('Navigation - Auth state:', {
             isAuthenticated: this.auth.isAuthenticated(),
@@ -107,7 +106,13 @@ export class RegisterComponent implements OnInit {
 
           // Redirect to the original URL if provided, otherwise to home
           const destination = this.redirectTo || '/';
-          window.location.href = destination;
+          
+          // Use router navigation in test mode, window.location.href in production
+          if (environment.isTestMode) {
+            this.router.navigate([destination]);
+          } else {
+            window.location.href = destination;
+          }
         }, 100);
       },
       error: (error) => {
