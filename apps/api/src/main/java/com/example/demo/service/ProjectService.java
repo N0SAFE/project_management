@@ -3,6 +3,7 @@ package com.example.demo.service;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,13 @@ public class ProjectService {
 
     public List<Project> getAllProjects() {
         return projectRepository.findAll();
+    }
+
+    public List<Project> getProjectsByUser(User user) {
+        List<ProjectMember> projectMembers = projectMemberRepository.findByUser(user);
+        return projectMembers.stream()
+            .map(ProjectMember::getProject)
+            .collect(Collectors.toList());
     }
 
     @Transactional
@@ -124,6 +132,17 @@ public class ProjectService {
         member.setUser(user);
         member.setRole(role);
         return projectMemberRepository.save(member);
+    }
+
+    /**
+     * Remove a member from the project
+     */
+    @Transactional
+    public void removeMember(Project project, User user) {
+        ProjectMember member = projectMemberRepository.findByProjectAndUser(project, user)
+                .orElseThrow(() -> new IllegalArgumentException("User is not a member of this project"));
+        
+        projectMemberRepository.delete(member);
     }
 
     /**

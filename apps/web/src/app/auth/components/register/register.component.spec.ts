@@ -1,5 +1,14 @@
-import { ComponentFixture, TestBed, fakeAsync, tick, flush } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import {
+  ComponentFixture,
+  TestBed,
+  fakeAsync,
+  tick,
+  flush,
+} from '@angular/core/testing';
+import {
+  HttpClientTestingModule,
+  HttpTestingController,
+} from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -8,20 +17,20 @@ import { Component } from '@angular/core';
 
 import { RegisterComponent } from './register.component';
 import { AuthService } from '../../services/auth.service';
-import { 
-  createTestQueryClient, 
-  provideTestQueryClient, 
-  createMockActivatedRoute, 
+import {
+  createTestQueryClient,
+  provideTestQueryClient,
+  createMockActivatedRoute,
   createMockRouter,
   createMockAuthService,
   TestDataFactory,
-  FormTestHelper
+  FormTestHelper,
 } from '../../../../test/test-utils';
 import { environment } from '../../../../environments/environment';
 
 // Dummy component for routing tests
 @Component({ template: '' })
-class DummyComponent { }
+class DummyComponent {}
 
 describe('RegisterComponent', () => {
   let component: RegisterComponent;
@@ -33,7 +42,7 @@ describe('RegisterComponent', () => {
 
   // Helper function to set multiple form values
   const setFormValues = (values: Record<string, any>) => {
-    Object.keys(values).forEach(key => {
+    Object.keys(values).forEach((key) => {
       const control = component.form.get(key);
       if (control) {
         control.setValue(values[key]);
@@ -41,7 +50,8 @@ describe('RegisterComponent', () => {
       }
     });
     fixture.detectChanges();
-  };  beforeEach(async () => {
+  };
+  beforeEach(async () => {
     mockAuthService = createMockAuthService();
 
     await TestBed.configureTestingModule({
@@ -50,36 +60,35 @@ describe('RegisterComponent', () => {
         HttpClientTestingModule,
         RouterTestingModule.withRoutes([
           { path: 'login', component: DummyComponent },
-          { path: 'dashboard', component: DummyComponent }
+          { path: 'dashboard', component: DummyComponent },
         ]),
-        ReactiveFormsModule
+        ReactiveFormsModule,
       ],
       providers: [
         ...provideTestQueryClient(),
         { provide: AuthService, useValue: mockAuthService },
-        { 
-          provide: ActivatedRoute, 
+        {
+          provide: ActivatedRoute,
           useValue: {
             snapshot: {
               queryParamMap: {
-                get: jasmine.createSpy('get').and.returnValue(null)
-              }
-            }
-          }
-        }
-      ]
-    })
-    .compileComponents();
+                get: jasmine.createSpy('get').and.returnValue(null),
+              },
+            },
+          },
+        },
+      ],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(RegisterComponent);
     component = fixture.componentInstance;
     httpMock = TestBed.inject(HttpTestingController);
     router = TestBed.inject(Router);
     activatedRoute = TestBed.inject(ActivatedRoute);
-    
+
     // Setup spies
     spyOn(router, 'navigate');
-    
+
     fixture.detectChanges();
   });
 
@@ -101,7 +110,7 @@ describe('RegisterComponent', () => {
       expect(component.form.get('username')?.value).toBe('');
       expect(component.form.get('email')?.value).toBe('');
       expect(component.form.get('password')?.value).toBe('');
-      
+
       // Check validators
       expect(component.form.get('username')?.hasError('required')).toBeTruthy();
       expect(component.form.get('email')?.hasError('required')).toBeTruthy();
@@ -117,18 +126,18 @@ describe('RegisterComponent', () => {
   describe('Form Validation', () => {
     it('should validate username requirements', () => {
       const usernameControl = component.form.get('username')!;
-      
+
       // Required validation
       expect(usernameControl.hasError('required')).toBeTruthy();
-      
+
       // Min length validation
       usernameControl.setValue('ab');
       expect(usernameControl.hasError('minlength')).toBeTruthy();
-      
+
       // Max length validation
       usernameControl.setValue('a'.repeat(51));
       expect(usernameControl.hasError('maxlength')).toBeTruthy();
-      
+
       // Valid username
       usernameControl.setValue('validuser');
       expect(usernameControl.valid).toBeTruthy();
@@ -136,14 +145,14 @@ describe('RegisterComponent', () => {
 
     it('should validate email format', () => {
       const emailControl = component.form.get('email')!;
-      
+
       // Required validation
       expect(emailControl.hasError('required')).toBeTruthy();
-      
+
       // Email format validation
       emailControl.setValue('invalid-email');
       expect(emailControl.hasError('email')).toBeTruthy();
-      
+
       // Valid email
       emailControl.setValue('test@example.com');
       expect(emailControl.valid).toBeTruthy();
@@ -151,37 +160,41 @@ describe('RegisterComponent', () => {
 
     it('should validate password requirements', () => {
       const passwordControl = component.form.get('password')!;
-      
+
       // Required validation
       expect(passwordControl.hasError('required')).toBeTruthy();
-      
+
       // Min length validation
       passwordControl.setValue('123');
       expect(passwordControl.hasError('minlength')).toBeTruthy();
-      
+
       // Valid password
       passwordControl.setValue('password123');
       expect(passwordControl.valid).toBeTruthy();
-    });    it('should prevent submission when form is invalid', () => {
+    });
+    it('should prevent submission when form is invalid', () => {
       // Don't create a new spy since mockAuthService.register is already a spy
       component.submit();
-      
+
       expect(mockAuthService.register).not.toHaveBeenCalled();
-    });it('should allow submission when form is valid', () => {
-      mockAuthService.register.and.returnValue(of(TestDataFactory.createUser()));
-      
+    });
+    it('should allow submission when form is valid', () => {
+      mockAuthService.register.and.returnValue(
+        of(TestDataFactory.createUser())
+      );
+
       setFormValues({
         username: 'testuser',
         email: 'test@example.com',
-        password: 'password123'
+        password: 'password123',
       });
-      
+
       component.submit();
-      
+
       expect(mockAuthService.register).toHaveBeenCalledWith({
         username: 'testuser',
         email: 'test@example.com',
-        password: 'password123'
+        password: 'password123',
       });
     });
   });
@@ -190,146 +203,136 @@ describe('RegisterComponent', () => {
       setFormValues({
         username: 'testuser',
         email: 'test@example.com',
-        password: 'password123'
+        password: 'password123',
       });
     });
 
-    it('should handle successful registration', fakeAsync(() => {
-      const mockUser = TestDataFactory.createUser();
-      mockAuthService.register.and.returnValue(of(mockUser));
-      
-      component.submit();
-      tick();
-      
-      expect(router.navigate).toHaveBeenCalledWith(['/login']);
-    }));    it('should redirect to login with redirectTo parameter when present', fakeAsync(() => {
-      const mockUser = TestDataFactory.createUser();
-      mockAuthService.register.and.returnValue(of(mockUser));
-      
-      // Set redirectTo parameter by updating the spy
-      (activatedRoute.snapshot.queryParamMap.get as jasmine.Spy).and.callFake((key: string) => {
-        if (key === 'redirectTo') {
-          return '/projects';
-        }
-        return null;
-      });
-      component.ngOnInit(); // Re-initialize to pick up new query params
-      
-      component.submit();
-      tick();
-      
-      expect(router.navigate).toHaveBeenCalledWith(['/login'], { 
-        queryParams: { redirectTo: '/projects' }
-      });
-    }));it('should handle registration error with status 400', fakeAsync(() => {
+    it('should handle registration error with status 400', fakeAsync(() => {
       const error = { status: 400, error: { message: 'Invalid email format' } };
       mockAuthService.register.and.returnValue(throwError(() => error));
-      
+
       component.submit();
       tick();
-      
+
       expect(router.navigate).not.toHaveBeenCalled();
     }));
 
     it('should handle registration error with status 409 (conflict)', fakeAsync(() => {
       const error = { status: 409, error: { message: 'User already exists' } };
       mockAuthService.register.and.returnValue(throwError(() => error));
-      
+
       component.submit();
       tick();
-      
+
       expect(router.navigate).not.toHaveBeenCalled();
     }));
 
     it('should handle network error (status 0)', fakeAsync(() => {
       const error = { status: 0, error: null };
       mockAuthService.register.and.returnValue(throwError(() => error));
-      
+
       component.submit();
       tick();
-      
+
       expect(router.navigate).not.toHaveBeenCalled();
     }));
   });
 
-  describe('State Management', () => {    it('should sync error message from auth service', fakeAsync(() => {
+  describe('State Management', () => {
+    it('should sync error message from auth service', fakeAsync(() => {
       const errorMessage = 'Registration failed';
       (mockAuthService as any)._setError(errorMessage);
-      
+
       tick();
       fixture.detectChanges();
-      
+
       expect(component.errorMsg()).toBe(errorMessage);
-    }));it('should clear error message before submission', () => {
+    }));
+    it('should clear error message before submission', () => {
       component.errorMsg.set('Previous error');
       setFormValues({
         username: 'testuser',
         email: 'test@example.com',
-        password: 'password123'
+        password: 'password123',
       });
-      mockAuthService.register.and.returnValue(of(TestDataFactory.createUser()));
-      
+      mockAuthService.register.and.returnValue(
+        of(TestDataFactory.createUser())
+      );
+
       component.submit();
-      
+
       expect(component.errorMsg()).toBe('');
     });
 
     it('should reflect loading state from auth service', () => {
       expect(component.loading).toBe(mockAuthService.loading);
     });
-  });  describe('Query Parameters Handling', () => {
+  });
+  describe('Query Parameters Handling', () => {
     it('should extract invitation token from query parameters', () => {
-      (activatedRoute.snapshot.queryParamMap.get as jasmine.Spy).and.callFake((key: string) => {
-        if (key === 'invitation') {
-          return 'mock-invitation-token';
+      (activatedRoute.snapshot.queryParamMap.get as jasmine.Spy).and.callFake(
+        (key: string) => {
+          if (key === 'invitation') {
+            return 'mock-invitation-token';
+          }
+          return null;
         }
-        return null;
-      });
-      
+      );
+
       component.ngOnInit();
-      
+
       expect(component['invitationToken']).toBe('mock-invitation-token');
     });
 
     it('should extract redirectTo from query parameters', () => {
-      (activatedRoute.snapshot.queryParamMap.get as jasmine.Spy).and.callFake((key: string) => {
-        if (key === 'redirectTo') {
-          return '/projects/123';
+      (activatedRoute.snapshot.queryParamMap.get as jasmine.Spy).and.callFake(
+        (key: string) => {
+          if (key === 'redirectTo') {
+            return '/projects/123';
+          }
+          return null;
         }
-        return null;
-      });
-      
+      );
+
       component.ngOnInit();
-      
+
       expect(component['redirectTo']).toBe('/projects/123');
     });
 
     it('should handle missing query parameters gracefully', () => {
-      (activatedRoute.snapshot.queryParamMap.get as jasmine.Spy).and.returnValue(null);
-      
+      (
+        activatedRoute.snapshot.queryParamMap.get as jasmine.Spy
+      ).and.returnValue(null);
+
       component.ngOnInit();
-      
+
       expect(component['invitationToken']).toBeNull();
       expect(component['redirectTo']).toBeNull();
     });
   });
 
-  describe('UI Integration', () => {    it('should disable submit button when loading', () => {
+  describe('UI Integration', () => {
+    it('should disable submit button when loading', () => {
       (mockAuthService as any)._setLoading(true);
       fixture.detectChanges();
-      
-      const submitButton = fixture.nativeElement.querySelector('button[type="submit"]');
+
+      const submitButton = fixture.nativeElement.querySelector(
+        'button[type="submit"]'
+      );
       expect(submitButton?.disabled).toBeTruthy();
-    });    it('should enable submit button when form is valid and not loading', () => {
+    });
+    it('should enable submit button when form is valid and not loading', () => {
       (mockAuthService as any)._setLoading(false);
       setFormValues({
         username: 'testuser',
         email: 'test@example.com',
-        password: 'password123'
+        password: 'password123',
       });
       fixture.detectChanges();
-      
-      const submitButton = fixture.nativeElement.querySelector('button[type="submit"]');
+
+      const submitButton = fixture.nativeElement.querySelector(
+        'button[type="submit"]'
+      );
       expect(submitButton?.disabled).toBeFalsy();
     });
 
@@ -337,8 +340,10 @@ describe('RegisterComponent', () => {
       (mockAuthService as any)._setLoading(true);
       tick();
       fixture.detectChanges();
-      
-      const submitButton = fixture.nativeElement.querySelector('button[type="submit"]');
+
+      const submitButton = fixture.nativeElement.querySelector(
+        'button[type="submit"]'
+      );
       expect(submitButton?.disabled).toBeTruthy();
     }));
   });

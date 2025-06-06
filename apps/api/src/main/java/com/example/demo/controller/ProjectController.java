@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -46,8 +47,11 @@ public class ProjectController {
     private String baseUrl;
 
     @GetMapping
-    public ResponseEntity<List<Project>> getAllProjects() {
-        List<Project> projects = projectService.getAllProjects();
+    public ResponseEntity<List<Project>> getAllProjects(Authentication authentication) {
+        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+        User user = userPrincipal.getUser();
+        
+        List<Project> projects = projectService.getProjectsByUser(user);
         return ResponseEntity.ok(projects);
     }
 
@@ -76,6 +80,47 @@ public class ProjectController {
         Project project = projectService.getProject(id)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
         return ResponseEntity.ok(projectService.getProjectMembers(project));
+    }
+
+    @GetMapping("/{id}/invitations")
+    public ResponseEntity<List<Map<String, Object>>> getProjectInvitations(@PathVariable Long id, Authentication authentication) {
+        try {
+            Project project = projectService.getProject(id)
+                    .orElseThrow(() -> new RuntimeException("Project not found"));
+            
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            User user = userPrincipal.getUser();
+            
+            // Check if user is a member of the project (any role can see invitations)
+            if (!projectService.isMember(project, user.getEmail())) {
+                return ResponseEntity.status(403).body(null);
+            }
+            
+            List<ProjectInvitation> invitations = invitationService.getProjectInvitations(project.getId());
+            
+            // Filter only pending invitations and map to response format
+            List<Map<String, Object>> invitationResponses = invitations.stream()
+                .filter(inv -> inv.getStatus() == ProjectInvitation.InvitationStatus.PENDING)
+                .filter(inv -> inv.getExpiresAt().isAfter(LocalDateTime.now())) // Only non-expired
+                .map(invitation -> {
+                    Map<String, Object> invMap = new java.util.HashMap<>();
+                    invMap.put("id", invitation.getId());
+                    invMap.put("email", invitation.getEmail());
+                    invMap.put("role", invitation.getRole().toString());
+                    invMap.put("status", invitation.getStatus().toString());
+                    invMap.put("inviterName", invitation.getInviter().getUsername());
+                    invMap.put("createdAt", invitation.getCreatedAt().toString());
+                    invMap.put("expiresAt", invitation.getExpiresAt().toString());
+                    return invMap;
+                })
+                .collect(java.util.stream.Collectors.toList());
+            
+            return ResponseEntity.ok(invitationResponses);
+            
+        } catch (Exception e) {
+            log.error("Failed to get project invitations: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PostMapping("/{id}/invite")
@@ -120,7 +165,7 @@ public class ProjectController {
                     admin.getUsername(),
                     project.getName(),
                     project.getDescription(),
-                    mapRoleToFrench(role),
+                    role,
                     invitation.getToken(),
                     userExists,
                     baseUrl
@@ -160,18 +205,6 @@ public class ProjectController {
             return ResponseEntity.badRequest()
                 .body(Map.of("error", "Échec de la création de l'invitation: " + e.getMessage()));
         }
-    }
-    
-    /**
-     * Map ProjectRole enum to French display text
-     */
-    private String mapRoleToFrench(ProjectMember.ProjectRole role) {
-        return switch (role) {
-            case ADMIN -> "Administrateur";
-            case MEMBER -> "Membre";
-            case OBSERVER -> "Observateur";
-            default -> role.toString();
-        };
     }
 
     @PostMapping("/{id}/members/{userId}/role")
@@ -261,6 +294,102 @@ public class ProjectController {
             log.error("Failed to delete project: {}", e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("error", "Failed to delete project: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Update project member role - PUT endpoint as expected by frontend
+     */
+    @PutMapping("/{id}/members/{userId}")
+    public ResponseEntity<?> updateProjectMember(@PathVariable Long id, @PathVariable Long userId, @RequestBody Map<String, String> body, Authentication authentication) {
+        try {
+            Project project = projectService.getProject(id)
+                    .orElseThrow(() -> new RuntimeException("Project not found"));
+            
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            User admin = userPrincipal.getUser();
+            
+            // Check if user is admin of the project
+            if (!projectService.isAdmin(project, admin)) {
+                return ResponseEntity.status(403).body(Map.of("error", "Only admins can update member roles"));
+            }
+            
+            User targetUser = userService.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            String roleString = body.get("role");
+            if (roleString == null || roleString.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Role is required"));
+            }
+            
+            ProjectMember.ProjectRole newRole;
+            try {
+                newRole = ProjectMember.ProjectRole.valueOf(roleString.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid role: " + roleString));
+            }
+            
+            // Prevent admin from removing their own admin rights if they're the only admin
+            if (admin.getId().equals(userId) && newRole != ProjectMember.ProjectRole.ADMIN) {
+                List<ProjectMember> admins = projectService.getProjectMembers(project).stream()
+                    .filter(m -> m.getRole() == ProjectMember.ProjectRole.ADMIN)
+                    .collect(java.util.stream.Collectors.toList());
+                
+                if (admins.size() == 1) {
+                    return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Cannot remove admin rights - project must have at least one admin"));
+                }
+            }
+            
+            ProjectMember updatedMember = projectService.changeMemberRole(project, targetUser, newRole);
+            return ResponseEntity.ok(updatedMember);
+            
+        } catch (Exception e) {
+            log.error("Failed to update project member: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", "Failed to update member role: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Delete/remove project member
+     */
+    @DeleteMapping("/{id}/members/{userId}")
+    public ResponseEntity<?> deleteProjectMember(@PathVariable Long id, @PathVariable Long userId, Authentication authentication) {
+        try {
+            Project project = projectService.getProject(id)
+                    .orElseThrow(() -> new RuntimeException("Project not found"));
+            
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            User admin = userPrincipal.getUser();
+            
+            // Check if user is admin of the project
+            if (!projectService.isAdmin(project, admin)) {
+                return ResponseEntity.status(403).body(Map.of("error", "Only admins can remove members"));
+            }
+            
+            User targetUser = userService.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            // Prevent admin from removing themselves if they're the only admin
+            if (admin.getId().equals(userId)) {
+                List<ProjectMember> admins = projectService.getProjectMembers(project).stream()
+                    .filter(m -> m.getRole() == ProjectMember.ProjectRole.ADMIN)
+                    .collect(java.util.stream.Collectors.toList());
+                
+                if (admins.size() == 1) {
+                    return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Cannot remove yourself - project must have at least one admin"));
+                }
+            }
+            
+            projectService.removeMember(project, targetUser);
+            return ResponseEntity.ok(Map.of("message", "Member removed successfully"));
+            
+        } catch (Exception e) {
+            log.error("Failed to remove project member: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", "Failed to remove member: " + e.getMessage()));
         }
     }
 }

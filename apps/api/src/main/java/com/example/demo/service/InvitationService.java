@@ -57,7 +57,7 @@ public class InvitationService {
      */
     @Transactional
     public ProjectMember acceptInvitation(ProjectInvitation invitation, User user) {
-        // Mark invitation as accepted
+        // Mark invitation as accepted (this allows the user to be re-invited if removed later)
         invitation.setStatus(ProjectInvitation.InvitationStatus.ACCEPTED);
         invitation.setAcceptedAt(LocalDateTime.now());
         invitation.setAcceptedByUser(user);

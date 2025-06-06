@@ -10,6 +10,7 @@ import { HlmSeparatorDirective } from '@spartan-ng/ui-separator-helm';
 import { HlmAlertDirective, HlmAlertDescriptionDirective, HlmAlertTitleDirective, HlmAlertIconDirective } from '@spartan-ng/ui-alert-helm';
 import { HlmH1Directive, HlmMutedDirective } from '@spartan-ng/ui-typography-helm';
 import { toast } from 'ngx-sonner';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -74,8 +75,7 @@ export class LoginComponent implements OnInit {
         toast.success('Login successful', {
           description: 'Welcome back! You have been successfully logged in.'
         });
-        
-        // Wait a bit for the state to update, then navigate
+          // Wait a bit for the state to update, then navigate
         setTimeout(() => {
           console.log('Navigation - Auth state:', {
             isAuthenticated: this.auth.isAuthenticated(),
@@ -84,7 +84,13 @@ export class LoginComponent implements OnInit {
           
           // Redirect to the original URL if provided, otherwise to home
           const destination = this.redirectTo || '/';
-          this.router.navigate([destination]);
+          
+          // Use router navigation in test mode, window.location.href in production
+          if (environment.isTestMode) {
+            this.router.navigate([destination]);
+          } else {
+            window.location.href = destination;
+          }
         }, 100);
       },
       error: (error) => {

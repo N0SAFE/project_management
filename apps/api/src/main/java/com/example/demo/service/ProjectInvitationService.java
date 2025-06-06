@@ -83,14 +83,13 @@ public class ProjectInvitationService {
     private void sendInvitationEmail(ProjectInvitation invitation) {
         try {
             boolean userExists = userService.findByEmail(invitation.getEmail()).isPresent();
-            String roleDisplay = mapRoleToFrench(invitation.getRole());
 
             emailService.sendProjectInvitationSmart(
                     invitation.getEmail(),
                     invitation.getInviter().getUsername(),
                     invitation.getProject().getName(),
                     invitation.getProject().getDescription(),
-                    roleDisplay,
+                    invitation.getRole(),
                     invitation.getToken(),
                     userExists,
                     baseUrl
@@ -181,21 +180,5 @@ public class ProjectInvitationService {
     @Transactional
     public int cleanupExpiredInvitations() {
         return invitationRepository.expireOldInvitations(LocalDateTime.now());
-    }
-
-    /**
-     * Map ProjectRole enum to French display text
-     */
-    private String mapRoleToFrench(ProjectMember.ProjectRole role) {
-        switch (role) {
-            case ADMIN:
-                return "Administrateur";
-            case MEMBER:
-                return "Membre";
-            case OBSERVER:
-                return "Observateur";
-            default:
-                return role.toString();
-        }
     }
 }
