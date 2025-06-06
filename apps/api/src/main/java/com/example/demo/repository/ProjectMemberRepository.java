@@ -16,6 +16,7 @@ import com.example.demo.model.User;
 public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Long> {
     List<ProjectMember> findByProject(Project project);
     Optional<ProjectMember> findByProjectAndUser(Project project, User user);
+    List<ProjectMember> findByUser(User user);
     
     @Modifying
     @Transactional

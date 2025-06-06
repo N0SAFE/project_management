@@ -95,7 +95,7 @@ public class InvitationController {
                         inviter.getUsername(),
                         project.getName(),
                         project.getDescription(),
-                        mapRoleToFrench(role),
+                        role,
                         invitation.getToken(),
                         userExists,
                         baseUrl
@@ -209,7 +209,7 @@ public class InvitationController {
                             "name", invitation.getProject().getName(),
                             "description", invitation.getProject().getDescription()
                     ),
-                    "role", mapRoleToFrench(invitation.getRole()),
+                    "role", invitation.getRole(),
                     "inviterName", invitation.getInviter().getUsername(),
                     "email", invitation.getEmail(),
                     "expiresAt", invitation.getExpiresAt()
@@ -280,19 +280,5 @@ public class InvitationController {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "Failed to cancel invitation"));
         }
-    }
-
-    /**
-     * Map ProjectRole enum to French display text
-     */
-    private String mapRoleToFrench(ProjectMember.ProjectRole role) {
-        return switch (role) {
-            case ADMIN ->
-                "Administrateur";
-            case MEMBER ->
-                "Membre";
-            case OBSERVER ->
-                "Observateur";
-        };
     }
 }

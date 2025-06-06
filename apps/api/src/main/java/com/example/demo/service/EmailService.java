@@ -6,12 +6,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.dto.email.EmailRequest;
+import com.example.demo.model.ProjectMember;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 public class EmailService {
 
     private final JavaMailSender mailSender;
+    private final HandlebarsTemplateService handlebarsTemplateService;
 
     @Value("${app.mail.from}")
     private String fromEmail;
@@ -67,30 +68,16 @@ public class EmailService {
     }
 
     /**
-     * Load template from resources and replace placeholders
+     * Load template and process with Handlebars
      */
     private String loadAndProcessTemplate(String templateName, Map<String, Object> templateData)
             throws IOException {
-
-        String templatePath = "templates/email/" + templateName + ".html";
-        ClassPathResource resource = new ClassPathResource(templatePath);
-
-        if (!resource.exists()) {
-            throw new IllegalArgumentException("Template not found: " + templatePath);
+        try {
+            return handlebarsTemplateService.processTemplate(templateName, templateData);
+        } catch (Exception e) {
+            log.error("Failed to process template {}: {}", templateName, e.getMessage());
+            throw new IOException("Template processing failed", e);
         }
-
-        String content = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-
-        // Replace placeholders with actual data
-        if (templateData != null) {
-            for (Map.Entry<String, Object> entry : templateData.entrySet()) {
-                String placeholder = "{{" + entry.getKey() + "}}";
-                String value = entry.getValue() != null ? entry.getValue().toString() : "";
-                content = content.replace(placeholder, value);
-            }
-        }
-
-        return content;
     }
 
     /**
@@ -98,17 +85,20 @@ public class EmailService {
      */
     public void sendProjectInvitation(String recipientEmail, String inviterName,
             String projectName, String projectDescription,
-            String roleAssigned, String invitationLink,
+            ProjectMember.ProjectRole roleAssigned, String invitationLink,
             String expirationDate) {
 
         Map<String, Object> templateData = Map.of(
                 "inviterName", inviterName,
                 "projectName", projectName,
                 "projectDescription", projectDescription,
-                "roleAssigned", roleAssigned,
+                "roleAssigned", roleAssigned.toString(),
                 "invitationLink", invitationLink,
                 "expirationDate", expirationDate
         );
+
+        log.info("Sending project invitation to {} for project '{}' with role: {}",
+                recipientEmail, projectName, roleAssigned);
 
         EmailRequest emailRequest = EmailRequest.builder()
                 .to(recipientEmail)
@@ -155,21 +145,19 @@ public class EmailService {
      */
     public void sendProjectInvitationSmart(String recipientEmail, String inviterName,
             String projectName, String projectDescription,
-            String roleAssigned, String invitationToken,
+            ProjectMember.ProjectRole roleAssigned, String invitationToken,
             boolean userExists, String baseUrl) {
 
-        String invitationLink = userExists
-                ? baseUrl + "/invitations/accept/" + invitationToken
-                : baseUrl + "/invitations/accept/" + invitationToken + "?needsAccount=true";
+        String invitationLink = baseUrl + "/invitations/accept/" + invitationToken;
 
-        String templateName = userExists ? "project-invitation-existing" : "project-invitation-new";
+        String templateName = "project-invitation";
 
         Map<String, Object> templateData = Map.of(
                 "inviterName", inviterName,
                 "projectName", projectName,
                 "projectDescription", projectDescription != null ? projectDescription : "Aucune description disponible",
-                "roleAssigned", roleAssigned,
-                "invitationLink", invitationLink,
+                "roleAssigned", roleAssigned.toString(),
+                "invitationLink", userExists ? invitationLink : baseUrl + "/register?redirectTo=" + java.net.URLEncoder.encode(invitationLink, java.nio.charset.StandardCharsets.UTF_8),
                 "invitationToken", invitationToken,
                 "loginLink", baseUrl + "/login?redirectTo=" + java.net.URLEncoder.encode("/invitations/accept/" + invitationToken, java.nio.charset.StandardCharsets.UTF_8),
                 "registerLink", baseUrl + "/register?redirectTo=" + java.net.URLEncoder.encode("/invitations/accept/" + invitationToken, java.nio.charset.StandardCharsets.UTF_8),
